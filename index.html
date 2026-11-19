@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>
+<title>Módulo de Diseño</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap">
+<style>
+/* Concepto: pantalla de inicio de apps estilo ERP (lila) y un único módulo operativo, Diseño, con kanban, ficha con cronómetro y dashboard. */
+:root{
+  --bg:#f1f2f5; --surface:#ffffff; --surface2:#f7f8fa; --fg:#212529; --muted:#667085; --line:#dde0e6;
+  --nav:#5a4d88; --nav-ink:#ffffff; --brand:#5a4d88; --brand-soft:#ebe7f6;
+  --primary:#00858a; --primary-ink:#ffffff;
+  --ok:#1b7f48; --ok-soft:#dcf3e5; --warn:#9a5a00; --warn-soft:#fdedd0; --crit:#bb3224; --crit-soft:#fbe2de; --info:#2563a8; --info-soft:#dfeaf7;
+  --bar1:#5a4d88; --bar2:#c5bedc;
+  --home1:#6f62a0; --home2:#aaa4ba;
+  --font:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15141b; --surface:#1f1e27; --surface2:#262531; --fg:#e9e7f0; --muted:#a09dae; --line:#363442;
+  --nav:#3b3363; --nav-ink:#ffffff; --brand:#b0a3e0; --brand-soft:#2c2846;
+  --primary:#12878b; --primary-ink:#ffffff;
+  --ok:#62c78f; --ok-soft:#173222; --warn:#f0b45c; --warn-soft:#3a2c11; --crit:#f2918a; --crit-soft:#3e1e1a; --info:#82b4ee; --info-soft:#172a40;
+  --bar1:#a89bdc; --bar2:#4a4565;
+  --home1:#40386a; --home2:#6c6881; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15141b; --surface:#1f1e27; --surface2:#262531; --fg:#e9e7f0; --muted:#a09dae; --line:#363442;
+  --nav:#3b3363; --nav-ink:#ffffff; --brand:#b0a3e0; --brand-soft:#2c2846;
+  --primary:#12878b; --primary-ink:#ffffff;
+  --ok:#62c78f; --ok-soft:#173222; --warn:#f0b45c; --warn-soft:#3a2c11; --crit:#f2918a; --crit-soft:#3e1e1a; --info:#82b4ee; --info-soft:#172a40;
+  --bar1:#a89bdc; --bar2:#4a4565;
+  --home1:#40386a; --home2:#6c6881; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;line-height:1.45;min-height:100vh}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--nav)}
+button{font:inherit;color:inherit;cursor:pointer}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:7px 10px;min-width:0;max-width:100%}
+textarea{resize:vertical}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- HOME ---------- */
+.home{min-height:100vh;position:relative;overflow:hidden;background:linear-gradient(180deg,var(--home1) 0%,var(--home2) 100%);color:#fff}
+.home::before,.home::after{content:"";position:absolute;pointer-events:none}
+.home::before{inset:0;background:linear-gradient(115deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.07) 30%,rgba(255,255,255,.07) 62%,rgba(0,0,0,.06) 62%);clip-path:polygon(0 0,100% 0,100% 100%,0 100%)}
+.home::after{right:-10%;top:-5%;width:55%;height:120%;background:rgba(0,0,0,.05);clip-path:polygon(40% 0,100% 0,100% 100%,0 100%);transform:skewX(-8deg)}
+.topbar{position:relative;z-index:2;display:flex;align-items:center;justify-content:flex-end;gap:18px;height:56px;border-bottom:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.06)}
+.tb-ico{position:relative;display:inline-flex;opacity:.85}
+.tb-ico b{position:absolute;top:-7px;right:-9px;background:#0a8f7e;color:#fff;font-size:10px;border-radius:9px;padding:0 5px;line-height:15px}
+.home-main{position:relative;z-index:2;max-width:1060px;margin:0 auto;padding-top:22px;padding-bottom:60px}
+.search{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.17);border:1px solid rgba(255,255,255,.14);border-radius:4px;padding:0 14px}
+.search input{flex:1;background:none;border:0;color:#fff;height:50px;padding:0;font-size:15px}
+.search input::placeholder{color:rgba(255,255,255,.7)}
+.apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:26px 8px;margin-top:34px}
+.app{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:8px;color:#fff;text-align:center;padding:4px;border-radius:6px}
+.app:hover .tile{transform:translateY(-2px)}
+.tile{position:relative;width:90px;height:90px;border-radius:5px;background:var(--tile);display:grid;place-items:center;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.25);transition:transform .15s}
+.tile::after{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.1) 0 50%,rgba(0,0,0,.16) 50% 100%);pointer-events:none}
+.tile svg{position:relative;z-index:1;width:52px;height:52px}
+.app .lbl{font-size:15px;line-height:1.2;text-shadow:0 1px 2px rgba(0,0,0,.25)}
+.app.live .tile{outline:2px solid rgba(255,255,255,.9);outline-offset:3px}
+.none{grid-column:1/-1;text-align:center;opacity:.85;padding:30px}
+
+/* user menu */
+.usr{position:relative}
+.usr-btn{display:flex;align-items:center;gap:9px;background:none;border:0;color:inherit;padding:6px 4px;border-radius:4px}
+.av{width:30px;height:30px;border-radius:50%;display:inline-grid;place-items:center;font-size:13px;font-weight:500;color:#fff;background:var(--c,#2b7ab8);flex:none}
+.av.sm{width:24px;height:24px;font-size:11px}
+.menu{position:absolute;right:0;top:100%;margin-top:6px;width:min(300px,calc(100vw - 32px));background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.28);z-index:80;padding:6px 0}
+.menu h6{margin:0;padding:8px 14px 4px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.menu button{display:flex;width:100%;align-items:center;gap:10px;background:none;border:0;padding:8px 14px;text-align:left}
+.menu button:hover{background:var(--surface2)}
+.menu .rl{font-size:12px;color:var(--muted)}
+.menu .ck{margin-left:auto;color:var(--primary);font-weight:700}
+.menu .hint{padding:8px 14px 6px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);margin-top:4px}
+
+/* ---------- MODULE ---------- */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;display:flex;align-items:center;gap:6px;min-height:46px;background:var(--nav);color:var(--nav-ink)}
+.nav .gridb{background:none;border:0;color:inherit;display:grid;place-items:center;width:34px;height:34px;border-radius:4px}
+.nav .gridb:hover,.menus button:hover{background:rgba(255,255,255,.14)}
+.nav .appn{font-weight:500;font-size:16px;margin:0 10px 0 2px}
+.menus{display:flex;gap:2px;flex:1;min-width:0;overflow-x:auto}
+.menus button{background:none;border:0;color:inherit;padding:8px 12px;border-radius:4px;white-space:nowrap;opacity:.88}
+.menus button.on{background:rgba(255,255,255,.2);opacity:1;font-weight:500}
+.nav .usr-btn{color:inherit}
+.nav .un{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.demo{background:var(--warn-soft);color:var(--warn);font-size:12.5px;padding-top:6px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.content{max-width:1280px;margin:0 auto;padding-top:16px;padding-bottom:48px}
+
+.cp{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-bottom:14px}
+.crumb{font-size:18px;font-weight:500;margin:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.crumb a{color:var(--brand);cursor:pointer;text-decoration:none}
+.crumb a:hover{text-decoration:underline}
+.crumb span.sep{color:var(--muted)}
+.sp{flex:1}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:4px;padding:7px 14px;font-weight:500;display:inline-flex;align-items:center;gap:7px}
+.btn:hover{background:var(--surface2)}
+.btn.p{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
+.btn.p:hover{filter:brightness(1.1)}
+.btn.d{color:var(--crit);border-color:var(--crit)}
+.btn.sm{padding:4px 10px;font-size:13px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{background:var(--surface);border:0;padding:7px 12px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--brand-soft);color:var(--brand);font-weight:500}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.filters input[type=search]{width:min(260px,100%)}
+
+.pill{display:inline-block;padding:1px 9px;border-radius:10px;font-size:12px;font-weight:500;white-space:nowrap;background:var(--surface2);color:var(--muted);border:1px solid var(--line)}
+.pill.solicitada{background:var(--surface2);color:var(--muted)}
+.pill.asignada{background:var(--info-soft);color:var(--info);border-color:transparent}
+.pill.diseno{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.pill.revision{background:var(--brand-soft);color:var(--brand);border-color:transparent}
+.pill.aprobada,.pill.entregada{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.pill.alta{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.pill.urgente{background:var(--crit-soft);color:var(--crit);border-color:transparent}
+
+/* kanban */
+.kb{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(236px,1fr);gap:10px;overflow-x:auto;padding-bottom:10px}
+.col{background:var(--surface2);border:1px solid var(--line);border-radius:6px;min-width:0;display:flex;flex-direction:column}
+.col h4{margin:0;padding:10px 12px;font-size:13px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)}
+.col h4 .n{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0 8px;font-size:12px;color:var(--muted)}
+.col .cards{display:flex;flex-direction:column;gap:8px;padding:8px;min-height:60px}
+.kc{background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:10px 11px;display:flex;flex-direction:column;gap:5px;cursor:pointer;min-width:0}
+.kc:hover{border-color:var(--brand);box-shadow:0 1px 6px rgba(0,0,0,.12)}
+.kc .t{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.kc .cl{font-weight:500;overflow-wrap:anywhere}
+.kc .tp{color:var(--muted);font-size:12.5px}
+.kc .b{display:flex;align-items:center;gap:8px;margin-top:3px;font-size:12px}
+.due{color:var(--muted)} .due.late{color:var(--crit);font-weight:500}
+.kc .b .av{margin-left:auto}
+.run{display:inline-flex;align-items:center;gap:6px;color:var(--ok);font-weight:500}
+.run i{width:8px;height:8px;border-radius:50%;background:var(--ok);animation:pulse 1.4s infinite}
+@keyframes pulse{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.run i{animation:none}.tile{transition:none}}
+.empty{color:var(--muted);font-size:12.5px;text-align:center;padding:10px}
+
+/* tables */
+.tw{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:500;background:var(--surface2)}
+tbody tr:last-child td{border-bottom:0}
+tr.link{cursor:pointer} tr.link:hover td{background:var(--surface2)}
+td.r,th.r{text-align:right}
+
+/* statusbar */
+.sb{display:flex;flex-wrap:wrap;margin-left:auto}
+.sb span{position:relative;padding:6px 18px 6px 22px;font-size:13px;background:var(--surface2);color:var(--muted);border:1px solid var(--line);margin-left:-8px;clip-path:polygon(0 0,calc(100% - 11px) 0,100% 50%,calc(100% - 11px) 100%,0 100%,11px 50%)}
+.sb span:first-child{margin-left:0;clip-path:polygon(0 0,calc(100% - 11px) 0,100% 50%,calc(100% - 11px) 100%,0 100%)}
+.sb span.done{background:var(--brand-soft);color:var(--brand)}
+.sb span.cur{background:var(--primary);color:var(--primary-ink);font-weight:500}
+
+/* form sheet */
+.fl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,360px);gap:16px;align-items:start}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:18px 20px;min-width:0}
+.sheet h2{margin:0 0 4px;font-size:22px}
+.sheet h3{margin:20px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:500}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 22px}
+.f{display:flex;flex-direction:column;gap:3px;min-width:0}
+.f label,.f .lb{font-size:12px;color:var(--muted);font-weight:500}
+.f .v{overflow-wrap:anywhere}
+.f.full{grid-column:1/-1}
+.f input,.f select,.f textarea{width:100%}
+.err{color:var(--crit);font-size:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface2);border-radius:14px;padding:2px 10px;font-size:12.5px;margin:0 6px 6px 0}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.st{border:1px solid var(--line);border-radius:6px;padding:10px 12px;background:var(--surface2);min-width:0}
+.st .k{font-size:12px;color:var(--muted)}
+.st .n{font-size:20px;font-weight:500;margin-top:2px}
+.st .n.run{color:var(--ok)}
+.chat{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
+.chat h3{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:500}
+.msg{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.msg:first-of-type{border-top:0}
+.msg .tx{min-width:0}
+.msg .m{font-size:12px;color:var(--muted)}
+.ask{margin-top:12px;border:1px solid var(--warn);background:var(--warn-soft);border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.ask textarea{width:100%;min-height:70px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.note{color:var(--muted);font-size:12.5px}
+
+/* dashboard */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:16px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px;min-width:0}
+.kpi .k{font-size:12px;color:var(--muted)}
+.kpi .n{font-size:26px;font-weight:500;margin-top:2px}
+.kpi .s{font-size:12px;color:var(--muted);margin-top:2px}
+.kpi.bad .n{color:var(--crit)}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;min-width:0}
+.panel h3{margin:0 0 12px;font-size:14px}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-bottom:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.mchart{display:flex;align-items:flex-end;gap:14px;height:190px;border-bottom:1px solid var(--line);padding:0 6px}
+.mc{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;min-width:0}
+.mc .tot{font-size:12px;margin-bottom:3px;font-weight:500}
+.mc .stack{width:min(54px,100%);display:flex;flex-direction:column;border-radius:3px 3px 0 0;overflow:hidden}
+.mlab{display:flex;gap:14px;padding:6px 6px 0}
+.mlab span{flex:1;text-align:center;font-size:12px;color:var(--muted)}
+.hb{display:grid;grid-template-columns:minmax(90px,150px) minmax(0,1fr) 52px;gap:6px 10px;align-items:center;font-size:13px}
+.hb .tr{height:14px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.hb .tr i{display:block;height:100%;background:var(--bar1)}
+.hb .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb .val{text-align:right}
+.perm td.c,.perm th.c{text-align:center}
+.yes{color:var(--ok);font-weight:700} .no{color:var(--muted)}
+.rules{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#2b2840;color:#fff;border-radius:6px;padding:10px 16px;font-size:13.5px;z-index:90;max-width:min(520px,calc(100vw - 32px));box-shadow:0 6px 20px rgba(0,0,0,.35)}
+
+@media (max-width:900px){.fl{grid-template-columns:minmax(0,1fr)}.g2{grid-template-columns:minmax(0,1fr)}.sb{margin-left:0;width:100%}}
+@media (max-width:560px){.fields{grid-template-columns:minmax(0,1fr)}.tile{width:78px;height:78px}.tile svg{width:44px;height:44px}.apps{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}.nav .un{display:none}.hb{grid-template-columns:minmax(70px,110px) minmax(0,1fr) 46px}}
+</style>
+
+<div id="app"></div>
+<div id="toast" hidden></div>
+
+<script>
+/* ======================= DATOS BASE ======================= */
+var TIPOS=['Valla publicitaria','Señalética','Arte para impresión','Rotulación vehicular','Banner / Roll-up','Papelería corporativa','Empaque / etiqueta','Otro'];
+var ESTADOS=[{k:'solicitada',n:'Solicitada'},{k:'asignada',n:'Asignada'},{k:'diseno',n:'En diseño'},{k:'revision',n:'En revisión'},{k:'aprobada',n:'Aprobada'},{k:'entregada',n:'Entregada'}];
+var PRIOS=['Normal','Alta','Urgente'];
+var USERS=[
+ {id:'julio',name:'Julio Monterrosa',role:'admin',c:'#2b7ab8'},
+ {id:'carlos',name:'Carlos Méndez',role:'vendedor',c:'#b0643a'},
+ {id:'mariela',name:'Mariela Rivas',role:'vendedor',c:'#a0457a'},
+ {id:'fran',name:'Fran',role:'disenador',c:'#3b8f6b'},
+ {id:'adonay',name:'Adonay',role:'disenador',c:'#7a5fb5'}
+];
+var ROLES={admin:'Administrador',vendedor:'Vendedor',disenador:'Diseñador'};
+var MEDIDAS={'Valla publicitaria':'4.80 x 2.40 m','Señalética':'60 x 20 cm','Arte para impresión':'21 x 28 cm','Rotulación vehicular':'1.20 x 0.60 m por lado','Banner / Roll-up':'0.85 x 2.00 m','Papelería corporativa':'Tarjeta 9 x 5 cm','Empaque / etiqueta':'10 x 6 cm','Otro':''};
+var MOTIVOS=['Ajustar el color del logotipo al manual de marca','Cambiar las medidas del arte','Corregir texto con error ortográfico'];
+var APPS=[
+ {id:'chat',n:'Conversaciones',c:'#c0587a',i:'<path fill="#fff" d="M12 4C7 4 3 7 3 11c0 2 1 4 3 5l-1 4 4-2.5c1 .3 2 .5 3 .5 5 0 9-3 9-7s-4-7-9-7z"/><rect x="8" y="9" width="8" height="1.7" fill="var(--tile)"/><rect x="8" y="12.2" width="8" height="1.7" fill="var(--tile)"/>'},
+ {id:'cal',n:'Calendario',c:'#a3a15a',i:'<rect x="4" y="6" width="16" height="14" rx="2" fill="#fff"/><rect x="7" y="3" width="2" height="5" rx="1" fill="#fff"/><rect x="15" y="3" width="2" height="5" rx="1" fill="#fff"/><g fill="var(--tile)"><rect x="7" y="10" width="2.4" height="2.4"/><rect x="10.8" y="10" width="2.4" height="2.4"/><rect x="14.6" y="10" width="2.4" height="2.4"/><rect x="7" y="14" width="2.4" height="2.4"/><rect x="10.8" y="14" width="2.4" height="2.4"/></g>'},
+ {id:'con',n:'Contactos',c:'#26908f',i:'<rect x="5" y="3" width="13" height="18" rx="2" fill="#fff"/><circle cx="11.5" cy="9.5" r="2.6" fill="var(--tile)"/><path d="M7.2 17c0-2.4 1.9-4 4.3-4s4.3 1.6 4.3 4z" fill="var(--tile)"/><rect x="19" y="6" width="2" height="3" fill="#fff"/><rect x="19" y="11" width="2" height="3" fill="#fff"/>'},
+ {id:'crm',n:'CRM',c:'#5c6188',i:'<path fill="#fff" d="M2 10l4-3 4 1 3-2 5 3 4-1v6l-3 3-3-1-3 3-4-3-4 1-3-3z"/><path d="M9 13l3 2M12 11l3 2" stroke="var(--tile)" stroke-width="1.5" fill="none"/>'},
+ {id:'ven',n:'Ventas',c:'#cf7f4d',i:'<path d="M4 4v16h16" stroke="#fff" stroke-width="2" fill="none"/><path d="M7 15l4-4 3 3 5-6" stroke="#fff" stroke-width="2" fill="none"/><path d="M16 7h4v4z" fill="#fff"/>'},
+ {id:'pos',n:'Punto de venta',c:'#5b5b5b',i:'<path d="M4 4h16l1 5H3z" fill="#fff"/><rect x="5" y="10" width="14" height="10" fill="#fff"/><rect x="10" y="13" width="4" height="7" fill="var(--tile)"/>'},
+ {id:'fac',n:'Facturación / Contabilidad',c:'#c77a49',i:'<path d="M6 3h8l5 5v13H6z" fill="#fff"/><text x="12.5" y="17" text-anchor="middle" font-size="9" font-weight="700" fill="var(--tile)" font-family="sans-serif">$</text>'},
+ {id:'com',n:'Compra',c:'#6a92ae',i:'<rect x="3" y="6" width="18" height="12" rx="2" fill="#fff"/><rect x="3" y="9" width="18" height="2.6" fill="var(--tile)"/><rect x="6" y="14" width="5" height="1.7" fill="var(--tile)"/>'},
+ {id:'inv',n:'Inventario',c:'#9d4b4b',i:'<path d="M12 3l9 4v10l-9 4-9-4V7z" fill="#fff"/><path d="M3 7l9 4 9-4M12 11v10" stroke="var(--tile)" stroke-width="1.6" fill="none"/>'},
+ {id:'fab',n:'Fabricación',c:'#5e9a79',i:'<path fill="#fff" d="M15 3a5 5 0 00-4.6 6.9L3 17.3 6.7 21l7.4-7.4A5 5 0 0021 9l-3 3-3-1-1-3 3-3z"/>'},
+ {id:'diseno',n:'Diseño',c:'#3a86d0',live:true,i:'<path d="M4 20l1-5L16 4l4 4L9 19z" fill="#fff"/><path d="M14 6l4 4" stroke="var(--tile)" stroke-width="1.6"/><rect x="4" y="21" width="16" height="1.6" fill="#fff"/>'},
+ {id:'emp',n:'Empleados',c:'#248a8d',i:'<circle cx="12" cy="8" r="3.2" fill="#fff"/><circle cx="5.5" cy="10" r="2.4" fill="#fff"/><circle cx="18.5" cy="10" r="2.4" fill="#fff"/><path d="M6 20c0-3.5 2.7-6 6-6s6 2.5 6 6z" fill="#fff"/><path d="M1.5 18c0-2.5 1.7-4 4-4 .8 0 1.5.2 2 .5-1 1-1.6 2.100-1.800 3.500zM22.500 18c0-2.500-1.700-4-4-4-.8 0-1.500.2-2 .5 1 1 1.600 2.100 1.800 3.500z" fill="#fff"/>'},
+ {id:'aju',n:'Ajustes',c:'#c8bd69',i:'<circle cx="12" cy="12" r="7.200" fill="none" stroke="#fff" stroke-width="4.200" stroke-dasharray="3.200 2.300"/><circle cx="12" cy="12" r="6.200" fill="#fff"/><circle cx="12" cy="12" r="2.600" fill="var(--tile)"/>'}
+];
+
+/* ======================= UTILIDADES ======================= */
+var D=864e5,H=36e5,MIN=6e4;
+function $(s,r){return (r||document).querySelector(s)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function pad(n){return String(n).padStart(2,'0')}
+function hms(ms){var s=Math.max(0,Math.floor(ms/1000));return pad(Math.floor(s/3600))+':'+pad(Math.floor(s%3600/60))+':'+pad(s%60)}
+function dur(ms){if(ms==null||isNaN(ms))return '—';var m=Math.round(ms/MIN);if(m<1)return '<1 min';if(m<60)return m+' min';var h=Math.floor(m/60),mm=m%60;if(h<48)return h+' h'+(mm?' '+pad(mm)+' min':'');return Math.floor(h/24)+' d '+(h%24)+' h'}
+function hrs(ms){return (ms/H).toFixed(1)}
+function dt(ts){if(!ts)return '—';try{return new Date(ts).toLocaleString('es',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}catch(e){return new Date(ts).toISOString().slice(0,16)}}
+function dshort(ts){try{return new Date(ts).toLocaleDateString('es',{day:'numeric',month:'short'})}catch(e){return ''}}
+function ymd(ts){var d=new Date(ts);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function U(id){return USERS.filter(function(u){return u.id===id})[0]}
+function ME(){return U(S.me)||USERS[0]}
+function toast(t){var el=$('#toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){el.hidden=true},3200)}
+function sum(a){return a.reduce(function(x,y){return x+y},0)}
+function avg(a){return a.length?sum(a)/a.length:null}
+
+/* ======================= DATOS DE EJEMPLO ======================= */
+function seed(){
+  var now=Date.now(),out=[];
+  var rows=[
+   [98,'Ferretería El Tornillo','mariela','Banner / Roll-up','fran','entregada',0.5,0,'Normal'],
+   [91,'Clínica San Rafael','carlos','Señalética','adonay','entregada',2,0,'Normal'],
+   [86,'Pupusería La Esquina','carlos','Rotulación vehicular','adonay','entregada',4.5,1,'Alta'],
+   [80,'Cooperativa Cuscatlán','mariela','Papelería corporativa','fran','entregada',1.5,0,'Normal'],
+   [74,'Hotel Costa Azul','carlos','Valla publicitaria','adonay','entregada',5,0,'Alta'],
+   [69,'Colegio Santa Lucía','mariela','Arte para impresión','fran','entregada',0.25,0,'Normal'],
+   [63,'Distribuidora Cabañas','carlos','Valla publicitaria','adonay','entregada',3.5,1,'Normal'],
+   [57,'Panadería Doña Rosa','mariela','Banner / Roll-up','fran','entregada',0.75,0,'Normal'],
+   [52,'Constructora Vista Alegre','carlos','Señalética','adonay','entregada',2.5,0,'Normal'],
+   [46,'Aeropuerto – señalética','mariela','Señalética','adonay','entregada',6,1,'Urgente'],
+   [41,'Ferretería El Tornillo','carlos','Arte para impresión','fran','entregada',0.5,0,'Normal'],
+   [36,'Clínica San Rafael','mariela','Empaque / etiqueta','fran','entregada',1.25,0,'Normal'],
+   [31,'Hotel Costa Azul','carlos','Banner / Roll-up','fran','entregada',0.5,0,'Normal'],
+   [27,'Cooperativa Cuscatlán','mariela','Valla publicitaria','adonay','entregada',4,0,'Alta'],
+   [22,'Colegio Santa Lucía','carlos','Papelería corporativa','fran','entregada',1,0,'Normal'],
+   [17,'Pupusería La Esquina','mariela','Rotulación vehicular','adonay','entregada',3,1,'Normal'],
+   [12,'Distribuidora Cabañas','carlos','Arte para impresión','fran','aprobada',0.25,0,'Normal'],
+   [9,'Panadería Doña Rosa','mariela','Señalética','adonay','aprobada',2,0,'Normal'],
+   [4,'Constructora Vista Alegre','carlos','Valla publicitaria','adonay','revision',3.5,0,'Alta'],
+   [3,'Hotel Costa Azul','mariela','Banner / Roll-up','fran','revision',0.5,0,'Normal'],
+   [3,'Aeropuerto – señalética','carlos','Señalética','adonay','diseno',1.5,0,'Urgente'],
+   [2,'Ferretería El Tornillo','mariela','Papelería corporativa','fran','diseno',0.5,0,'Normal'],
+   [0,'Clínica San Rafael','carlos','Arte para impresión','fran','run',0.5,0,'Normal'],
+   [1,'Colegio Santa Lucía','mariela','Empaque / etiqueta','adonay','asignada',0,0,'Normal'],
+   [0,'Pupusería La Esquina','carlos','Rotulación vehicular',null,'solicitada',0,0,'Alta'],
+   [0,'Cooperativa Cuscatlán','carlos','Banner / Roll-up',null,'solicitada',0,0,'Normal']
+  ];
+  rows.forEach(function(x,i){
+    var d=x[0],h=x[6],st=x[5],des=x[4],log=[],sessions=[],rework=[],ver=1;
+    var sod=new Date(now-d*D);sod.setHours(0,0,0,0);
+    var created=d===0?now-(st==='run'?4*H:(1+i%2)*H):sod.getTime()+(8+i%4)*H+((i*7)%60)*MIN;
+    if(d===1&&st==='asignada')created=sod.getTime()+10*H;
+    var r={id:'s'+i,op:String(12632+i*9),cliente:x[1],vendedor:x[2],tipo:x[3],medidas:MEDIDAS[x[3]],
+      desc:'Diseño de '+x[3].toLowerCase()+' para '+x[1]+'. Logotipo y textos adjuntos.',prioridad:x[8],
+      limite:ymd(created+(i===20?2:3+i%5)*D),adjuntos:['logo.ai','textos.docx'],designer:des,created:created,
+      assignedAt:null,firstStart:null,revisionAt:null,approvedAt:null,deliveredAt:null,version:1,sessions:sessions,rework:rework,log:log,estado:st};
+    log.push({ts:created,txt:'Solicitud creada',by:U(x[2]).name});
+    if(des){
+      r.assignedAt=Math.min(created+(20+(i*13)%100)*MIN,now-10*MIN);
+      log.push({ts:r.assignedAt,txt:'Asignada a '+U(des).name,by:'Julio Monterrosa'});
+    }
+    if(st==='asignada'||st==='solicitada'){out.push(r);return}
+    var cursor=Math.min(r.assignedAt+(30+(i*17)%150)*MIN,now-3*H);
+    r.firstStart=cursor;
+    var closedH=h,parts;
+    if(st==='run'){
+      r.created=now-4*H;r.assignedAt=now-3.5*H;r.firstStart=now-3*H;cursor=now-3*H;
+      sessions.push({start:cursor,end:cursor+0.5*H,ver:1});
+      sessions.push({start:now-25*MIN,end:null,ver:1});
+      log[0].ts=r.created;log[1].ts=r.assignedAt;
+      log.push({ts:r.firstStart,txt:'Inició el trabajo',by:U(des).name});
+      log.push({ts:cursor+0.5*H,txt:'Cronómetro en pausa',by:U(des).name});
+      log.push({ts:now-25*MIN,txt:'Reanudó el trabajo',by:U(des).name});
+      r.estado='diseno';r.limite=ymd(now+2*D);
+      out.push(r);return;
+    }
+    var v1=x[7]?h*0.75:h,v2=x[7]?h*0.25:0;
+    parts=v1>2?3:v1>0.7?2:1;
+    log.push({ts:cursor,txt:'Inició el trabajo',by:U(des).name});
+    for(var p=0;p<parts;p++){
+      var len=v1/parts*H;sessions.push({start:cursor,end:cursor+len,ver:1});cursor+=len;
+      if(p<parts-1){log.push({ts:cursor,txt:'Cronómetro en pausa',by:U(des).name});cursor+=(40+p*30)*MIN;log.push({ts:cursor,txt:'Reanudó el trabajo',by:U(des).name})}
+    }
+    if(st==='diseno'){r.estado='diseno';out.push(r);return}
+    r.revisionAt=cursor;log.push({ts:cursor,txt:'Enviada a revisión',by:U(des).name});
+    if(x[7]){
+      var rt=cursor+3*H;ver=2;r.version=2;
+      var motivo=MOTIVOS[i%MOTIVOS.length];
+      rework.push({ts:rt,motivo:motivo,ver:2});
+      log.push({ts:rt,txt:'Pidió cambios (v2): '+motivo,by:U(x[2]).name});
+      var s2=rt+2*H;sessions.push({start:s2,end:s2+v2*H,ver:2});cursor=s2+v2*H;
+      log.push({ts:s2,txt:'Reanudó el trabajo (v2)',by:U(des).name});
+      r.revisionAt=cursor;log.push({ts:cursor,txt:'Enviada a revisión (v2)',by:U(des).name});
+    }
+    if(st==='revision'){out.push(r);return}
+    r.approvedAt=Math.min(r.revisionAt+(2+(i*5)%20)*H,now-MIN);
+    log.push({ts:r.approvedAt,txt:'Aprobada',by:U(x[2]).name});
+    if(st==='entregada'){r.deliveredAt=Math.min(r.approvedAt+(1+i%5)*H,now-MIN);log.push({ts:r.deliveredAt,txt:'Marcada como entregada',by:U(x[2]).name})}
+    out.push(r);
+  });
+  out.forEach(function(r){r.log.sort(function(a,b){return a.ts-b.ts})});
+  return out;
+}
+
+/* ======================= ESTADO ======================= */
+var KEY='mr-diseno-prototipo-v1';
+var S=(function(){var s=null;try{var j=localStorage.getItem(KEY);if(j)s=JSON.parse(j)}catch(e){}
+  if(!s||!s.reqs||!s.reqs.length)s={reqs:seed(),me:'julio'};
+  s.screen='home';s.sub='list';s.sel=null;s.view='kanban';s.q='';s.fd='';s.ask=false;s.umenu=false;s.hq='';return s})();
+function save(){try{localStorage.setItem(KEY,JSON.stringify({reqs:S.reqs,me:S.me}))}catch(e){}}
+function get(id){return S.reqs.filter(function(r){return r.id===id})[0]}
+
+/* ======================= CÁLCULOS ======================= */
+function running(r){return r.sessions.some(function(s){return s.end==null})}
+function curStart(r){var s=r.sessions.filter(function(x){return x.end==null})[0];return s?s.start:null}
+function total(r,now){now=now||Date.now();return sum(r.sessions.map(function(s){return (s.end==null?now:s.end)-s.start}))}
+function dueTs(r){return new Date(r.limite+'T23:59:59').getTime()}
+function closed(r){return r.estado==='aprobada'||r.estado==='entregada'}
+function late(r){return !closed(r)&&dueTs(r)<Date.now()}
+function dueText(r){
+  if(closed(r))return 'Límite '+dshort(dueTs(r));
+  var n=Math.ceil((dueTs(r)-Date.now())/D);
+  if(n<0)return 'Vencida hace '+(-n)+' d';
+  if(n===0)return 'Vence hoy';
+  return 'Vence en '+n+' d';
+}
+function visible(){var me=ME();return S.reqs.filter(function(r){return me.role==='admin'||(me.role==='vendedor'&&r.vendedor===me.id)||(me.role==='disenador'&&r.designer===me.id)})}
+function canOp(r){var me=ME();return me.role==='admin'||(me.role==='disenador'&&r.designer===me.id)}
+function canReview(r){var me=ME();return me.role==='admin'||(me.role==='vendedor'&&r.vendedor===me.id)}
+function ev(r,txt){r.log.push({ts:Date.now(),txt:txt,by:ME().name})}
+function closeOpen(r){r.sessions.forEach(function(s){if(s.end==null)s.end=Date.now()})}
+function stats(list){
+  var fin=list.filter(closed);
+  var reached=list.filter(function(r){return r.revisionAt||r.version>1||['revision','aprobada','entregada'].indexOf(r.estado)>=0});
+  var rw=list.filter(function(r){return r.version>1});
+  var asg=list.filter(function(r){return r.assignedAt});
+  var st=list.filter(function(r){return r.firstStart&&r.assignedAt});
+  var apr=list.filter(function(r){return r.approvedAt&&r.revisionAt});
+  return {n:list.length,fin:fin.length,hours:sum(list.map(function(r){return total(r)})),
+    avgFin:avg(fin.map(function(r){return total(r)})),reached:reached.length,rw:rw.length,
+    waitAsg:avg(asg.map(function(r){return r.assignedAt-r.created})),
+    waitStart:avg(st.map(function(r){return r.firstStart-r.assignedAt})),
+    waitRev:avg(apr.map(function(r){return r.approvedAt-r.revisionAt})),
+    late:list.filter(late).length};
+}
+
+/* ======================= VISTAS ======================= */
+function avatar(id,sm){var u=U(id);if(!u)return '<span class="av '+(sm?'sm':'')+'" style="--c:#98a0ad" title="Sin asignar">?</span>';return '<span class="av '+(sm?'sm':'')+'" style="--c:'+u.c+'" title="'+esc(u.name)+'">'+esc(u.name[0])+'</span>'}
+function userMenu(){
+  var h='<div class="menu" id="umenu" '+(S.umenu?'':'hidden')+'><h6>Ver el sistema como</h6>';
+  USERS.forEach(function(u){h+='<button data-act="setUser" data-id="'+u.id+'">'+avatar(u.id,true)+'<span>'+esc(u.name)+'<br><span class="rl">'+ROLES[u.role]+'</span></span>'+(u.id===S.me?'<span class="ck">✓</span>':'')+'</button>'});
+  return h+'<div class="hint">Cambio de usuario solo para probar el prototipo. En el sistema real cada persona entra con su propia cuenta.</div></div>';
+}
+function userBtn(){var u=ME();return '<div class="usr"><button class="usr-btn" data-act="userMenu" aria-label="Cambiar usuario de prueba">'+avatar(u.id)+'<span class="un">'+esc(u.name)+'</span></button>'+userMenu()+'</div>'}
+
+function renderHome(){
+  var me=ME();
+  var apps=APPS.filter(function(a){return me.role!=='disenador'||a.live});
+  var q=S.hq.toLowerCase();
+  var h='<div class="home"><header class="topbar gut"><span class="tb-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M4 4h12v9H8l-4 3zM18 8h2v10l-3-2h-6v-2h7z"/></svg><b>2</b></span><span class="tb-ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>'+userBtn()+'</header>';
+  h+='<div class="gut"><div class="home-main"><label class="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><circle cx="10" cy="10" r="6.500"/><path d="M15 15l6 6"/></svg><input id="hq" type="text" placeholder="Buscar menús…" value="'+esc(S.hq)+'" autocomplete="off"></label><div class="apps" id="apps">'+appsHTML(apps,q)+'</div></div></div></div>';
+  return h;
+}
+function appsHTML(apps,q){
+  var l=apps.filter(function(a){return !q||a.n.toLowerCase().indexOf(q)>=0});
+  if(!l.length)return '<div class="none">Ningún menú coincide con la búsqueda.</div>';
+  return l.map(function(a){return '<button class="app'+(a.live?' live':'')+'" data-act="openApp" data-id="'+a.id+'"><span class="tile" style="--tile:'+a.c+'"><svg viewBox="0 0 24 24" aria-hidden="true">'+a.i+'</svg></span><span class="lbl">'+esc(a.n)+'</span></button>'}).join('');
+}
+
+function renderApp(){
+  var me=ME(),menus=[['list','Solicitudes']];
+  if(me.role==='admin'){menus.push(['dash','Dashboard']);menus.push(['config','Configuración'])}
+  var sub=S.sub;
+  var h='<div class="nav gut"><button class="gridb" data-act="goHome" aria-label="Volver a las aplicaciones"><svg width="20" height="20" viewBox="0 0 20 20" fill="#fff"><g><rect x="2" y="2" width="4" height="4"/><rect x="8" y="2" width="4" height="4"/><rect x="14" y="2" width="4" height="4"/><rect x="2" y="8" width="4" height="4"/><rect x="8" y="8" width="4" height="4"/><rect x="14" y="8" width="4" height="4"/><rect x="2" y="14" width="4" height="4"/><rect x="8" y="14" width="4" height="4"/><rect x="14" y="14" width="4" height="4"/></g></svg></button><span class="appn">Diseño</span><div class="menus">';
+  menus.forEach(function(m){var on=sub===m[0]||(m[0]==='list'&&(sub==='form'||sub==='new'));h+='<button class="'+(on?'on':'')+'" data-act="nav" data-sub="'+m[0]+'">'+m[1]+'</button>'});
+  h+='</div>'+userBtn()+'</div>';
+  h+='<div class="demo gut">Prototipo con datos de ejemplo. Lo que registres se guarda solo en este navegador. Usa tu foto de perfil (arriba a la derecha) para ver el flujo como vendedor, diseñador o administrador.</div>';
+  h+='<main class="content gut" id="main">'+mainHTML()+'</main>';
+  return h;
+}
+function mainHTML(){
+  if(S.sub==='form'&&get(S.sel))return formHTML(get(S.sel));
+  if(S.sub==='new')return newHTML();
+  if(S.sub==='dash'&&ME().role==='admin')return dashHTML();
+  if(S.sub==='config'&&ME().role==='admin')return configHTML();
+  return listHTML();
+}
+
+/* ---- lista / kanban ---- */
+function listHTML(){
+  var me=ME();
+  var h='<div class="cp"><h1 class="crumb">Solicitudes</h1>';
+  if(me.role!=='disenador')h+='<button class="btn p" data-act="newReq">+ Nueva solicitud</button>';
+  h+='<span class="sp"></span><div class="seg"><button class="'+(S.view==='kanban'?'on':'')+'" data-act="setView" data-v="kanban">Kanban</button><button class="'+(S.view==='lista'?'on':'')+'" data-act="setView" data-v="lista">Lista</button></div></div>';
+  if(me.role==='disenador')h+=designerStrip();
+  h+='<div class="filters" style="margin-bottom:12px"><input id="fq" type="search" placeholder="Buscar OP, cliente o tipo…" value="'+esc(S.q)+'" aria-label="Buscar">';
+  if(me.role==='admin'){h+='<select id="fd" aria-label="Filtrar por diseñador"><option value="">Todos los diseñadores</option><option value="none"'+(S.fd==='none'?' selected':'')+'>Sin asignar</option>'+USERS.filter(function(u){return u.role==='disenador'}).map(function(u){return '<option value="'+u.id+'"'+(S.fd===u.id?' selected':'')+'>'+esc(u.name)+'</option>'}).join('')+'</select>'}
+  h+='</div><div id="listBody">'+listBody()+'</div>';
+  return h;
+}
+function designerStrip(){
+  var me=ME(),mine=visible(),now=Date.now();
+  var sod=new Date();sod.setHours(0,0,0,0);var som=new Date();som.setDate(1);som.setHours(0,0,0,0);
+  function inRange(from){return sum(mine.map(function(r){return sum(r.sessions.map(function(s){var a=Math.max(s.start,from),b=s.end==null?now:s.end;return b>a?b-a:0}))}))}
+  var open=mine.filter(function(r){return !closed(r)}).length;
+  var run=mine.filter(running)[0];
+  return '<div class="stats" style="margin-bottom:12px"><div class="st"><div class="k">Horas hoy</div><div class="n num">'+hrs(inRange(sod.getTime()))+' h</div></div><div class="st"><div class="k">Horas este mes</div><div class="n num">'+hrs(inRange(som.getTime()))+' h</div></div><div class="st"><div class="k">Trabajos abiertos</div><div class="n">'+open+'</div></div><div class="st"><div class="k">Cronómetro</div><div class="n '+(run?'run':'')+' num">'+(run?'OP '+esc(run.op):'Detenido')+'</div></div></div>';
+}
+function filtered(){
+  var q=S.q.trim().toLowerCase();
+  return visible().filter(function(r){
+    if(S.fd==='none'&&r.designer)return false;
+    if(S.fd&&S.fd!=='none'&&r.designer!==S.fd)return false;
+    if(!q)return true;
+    return (r.op+' '+r.cliente+' '+r.tipo).toLowerCase().indexOf(q)>=0;
+  });
+}
+function listBody(){
+  var l=filtered();
+  if(!l.length)return '<div class="panel empty">No hay solicitudes con ese filtro.</div>';
+  if(S.view==='lista'){
+    l=l.slice().sort(function(a,b){return b.created-a.created});
+    var h='<div class="tw"><table><thead><tr><th>OP</th><th>Cliente</th><th>Tipo</th><th>Vendedor</th><th>Diseñador</th><th>Prioridad</th><th>Límite</th><th class="r">Tiempo</th><th>Estado</th></tr></thead><tbody>';
+    l.forEach(function(r){h+='<tr class="link" tabindex="0" data-act="open" data-id="'+r.id+'"><td><b>'+esc(r.op)+'</b></td><td>'+esc(r.cliente)+'</td><td>'+esc(r.tipo)+'</td><td>'+esc((U(r.vendedor)||{}).name)+'</td><td>'+(r.designer?esc(U(r.designer).name):'<span class="note">Sin asignar</span>')+'</td><td>'+prio(r)+'</td><td class="'+(late(r)?'due late':'due')+'">'+dueText(r)+'</td><td class="r num">'+(r.sessions.length?(running(r)?'<span class="run"><i></i><span data-t="tot" data-id="'+r.id+'">'+hms(total(r))+'</span></span>':dur(total(r))):'—')+'</td><td>'+stPill(r)+'</td></tr>'});
+    return h+'</tbody></table></div>';
+  }
+  var h='<div class="kb">';
+  ESTADOS.forEach(function(e){
+    var c=l.filter(function(r){return r.estado===e.k}).sort(function(a,b){return b.created-a.created});
+    h+='<section class="col"><h4>'+e.n+'<span class="n">'+c.length+'</span></h4><div class="cards">'+(c.length?c.map(card).join(''):'<div class="empty">Sin solicitudes</div>')+'</div></section>';
+  });
+  return h+'</div>';
+}
+function prio(r){return r.prioridad==='Normal'?'<span class="note">Normal</span>':'<span class="pill '+r.prioridad.toLowerCase()+'">'+r.prioridad+'</span>'}
+function stPill(r){var e=ESTADOS.filter(function(x){return x.k===r.estado})[0];return '<span class="pill '+r.estado+'">'+e.n+(r.estado==='diseno'&&!running(r)&&r.sessions.length?' · pausa':'')+'</span>'}
+function card(r){
+  var t=running(r)?'<span class="run"><i></i><span class="num" data-t="cur" data-id="'+r.id+'">'+hms(Date.now()-curStart(r))+'</span></span>':(r.sessions.length?'<span class="note num">'+dur(total(r))+'</span>':'');
+  return '<div class="kc" role="button" tabindex="0" data-act="open" data-id="'+r.id+'"><div class="t"><b>OP '+esc(r.op)+'</b>'+(r.prioridad!=='Normal'?'<span class="pill '+r.prioridad.toLowerCase()+'">'+r.prioridad+'</span>':'')+(r.version>1?'<span class="pill">v'+r.version+'</span>':'')+'</div><div class="cl">'+esc(r.cliente)+'</div><div class="tp">'+esc(r.tipo)+'</div><div class="b"><span class="due '+(late(r)?'late':'')+'">'+dueText(r)+'</span>'+t+avatar(r.designer,true)+'</div></div>';
+}
+
+/* ---- ficha ---- */
+function formHTML(r){
+  var idx=ESTADOS.map(function(e){return e.k}).indexOf(r.estado);
+  var h='<div class="cp"><h1 class="crumb"><a data-act="back">Solicitudes</a><span class="sep">/</span><span>OP '+esc(r.op)+'</span></h1>'+actionsHTML(r)+'<div class="sb">'+ESTADOS.map(function(e,i){return '<span class="'+(i<idx?'done':i===idx?'cur':'')+'">'+e.n+'</span>'}).join('')+'</div></div>';
+  if(S.ask&&r.estado==='revision'&&canReview(r))h+='<div class="ask"><b>¿Qué se debe cambiar?</b><textarea id="motivo" placeholder="Explica el cambio para que el diseñador lo entienda sin llamar."></textarea><span class="err" id="motivoErr" hidden>Escribe el motivo del cambio.</span><div class="row"><button class="btn p" data-act="confirmAsk">Enviar al diseñador</button><button class="btn" data-act="cancelAsk">Cancelar</button></div><span class="note">Se creará la versión v'+(r.version+1)+' y se pausará el cronómetro hasta que el diseñador retome el trabajo.</span></div>';
+  h+='<div class="fl" style="margin-top:14px"><div style="display:flex;flex-direction:column;gap:16px;min-width:0"><div class="sheet"><h2>'+esc(r.cliente)+'</h2><div class="row" style="margin-bottom:10px">'+stPill(r)+prio(r)+(r.version>1?'<span class="pill">Versión v'+r.version+'</span>':'')+'</div><div class="fields">';
+  h+=fld('Tipo de trabajo',esc(r.tipo))+fld('Medidas',esc(r.medidas||'—'))+fld('Vendedor',esc((U(r.vendedor)||{}).name))+fld('Diseñador',r.designer?esc(U(r.designer).name):'Sin asignar')+fld('Fecha límite',dshort(dueTs(r))+' · <span class="'+(late(r)?'due late':'due')+'">'+dueText(r)+'</span>')+fld('Creada',dt(r.created));
+  h+='<div class="f full"><span class="lb">Descripción</span><div class="v">'+esc(r.desc||'—')+'</div></div><div class="f full"><span class="lb">Archivos adjuntos</span><div>'+(r.adjuntos&&r.adjuntos.length?r.adjuntos.map(function(a){return '<span class="chip">📎 '+esc(a)+'</span>'}).join(''):'<span class="note">Sin archivos</span>')+'</div></div></div>';
+  h+='<h3>Tiempos</h3>'+timesHTML(r)+'</div></div>';
+  h+='<aside class="chat"><h3>Historial</h3>'+r.log.slice().sort(function(a,b){return b.ts-a.ts}).map(function(m){return '<div class="msg">'+avatarByName(m.by)+'<div class="tx"><div>'+esc(m.txt)+'</div><div class="m">'+esc(m.by)+' · '+dt(m.ts)+'</div></div></div>'}).join('')+'</aside></div>';
+  return h;
+}
+function avatarByName(n){var u=USERS.filter(function(x){return x.name===n})[0];return u?avatar(u.id,true):'<span class="av sm" style="--c:#98a0ad">?</span>'}
+function fld(l,v){return '<div class="f"><span class="lb">'+l+'</span><div class="v">'+v+'</div></div>'}
+function timesHTML(r){
+  var now=Date.now();
+  var waitA=r.assignedAt?r.assignedAt-r.created:null;
+  var waitS=r.firstStart&&r.assignedAt?r.firstStart-r.assignedAt:null;
+  var rev=r.revisionAt?((r.approvedAt||(r.estado==='revision'?now:null))-r.revisionAt):null;
+  var h='<div class="stats"><div class="st"><div class="k">Tiempo en diseño</div><div class="n num '+(running(r)?'run':'')+'" '+(running(r)?'data-t="tot" data-id="'+r.id+'"':'')+'>'+(running(r)?hms(total(r)):(r.sessions.length?dur(total(r)):'—'))+'</div></div><div class="st"><div class="k">Espera hasta asignar</div><div class="n">'+dur(waitA)+'</div></div><div class="st"><div class="k">Espera hasta iniciar</div><div class="n">'+dur(waitS)+'</div></div><div class="st"><div class="k">En revisión del vendedor</div><div class="n">'+dur(rev)+'</div></div></div>';
+  if(r.sessions.length){
+    h+='<div class="tw" style="margin-top:12px"><table class="num"><thead><tr><th>#</th><th>Versión</th><th>Inicio</th><th>Fin</th><th class="r">Duración</th></tr></thead><tbody>'+r.sessions.map(function(s,i){return '<tr><td>'+(i+1)+'</td><td>v'+s.ver+'</td><td>'+dt(s.start)+'</td><td>'+(s.end?dt(s.end):'<span class="run"><i></i>En curso</span>')+'</td><td class="r">'+dur((s.end==null?now:s.end)-s.start)+'</td></tr>'}).join('')+'</tbody></table></div>';
+  }else h+='<p class="note">Todavía no hay tiempo registrado. El cronómetro arranca cuando el diseñador inicia el trabajo.</p>';
+  if(r.rework&&r.rework.length)h+='<h3>Cambios pedidos</h3>'+r.rework.map(function(w){return '<div class="msg"><span class="pill">v'+w.ver+'</span><div class="tx">'+esc(w.motivo)+'<div class="m">'+dt(w.ts)+'</div></div></div>'}).join('');
+  return h;
+}
+function actionsHTML(r){
+  var h='<div class="row">';
+  if(r.estado==='solicitada'||r.estado==='asignada'){
+    if(ME().role==='admin'){
+      h+='<select id="assignSel" aria-label="Diseñador"><option value="">Elegir diseñador…</option>'+USERS.filter(function(u){return u.role==='disenador'}).map(function(u){return '<option value="'+u.id+'"'+(r.designer===u.id?' selected':'')+'>'+esc(u.name)+'</option>'}).join('')+'</select><button class="btn p" data-act="assign">'+(r.designer?'Reasignar':'Asignar')+'</button>';
+    }
+  }
+  if(r.estado==='asignada'&&canOp(r))h+='<button class="btn p" data-act="start">▶ Iniciar trabajo</button>';
+  if(r.estado==='diseno'&&canOp(r)){
+    h+=running(r)?'<button class="btn" data-act="pause">❚❚ Pausar</button>':'<button class="btn p" data-act="resume">▶ Reanudar</button>';
+    h+='<button class="btn'+(running(r)?' p':'')+'" data-act="toReview">Enviar a revisión</button>';
+  }
+  if(r.estado==='revision'&&canReview(r)&&!S.ask)h+='<button class="btn p" data-act="approve">Aprobar</button><button class="btn d" data-act="askChanges">Pedir cambios</button>';
+  if(r.estado==='aprobada'&&canReview(r))h+='<button class="btn p" data-act="deliver">Marcar entregada</button>';
+  return h+'</div>';
+}
+
+/* ---- nueva solicitud ---- */
+function newHTML(){
+  var me=ME();
+  var h='<div class="cp"><h1 class="crumb"><a data-act="back">Solicitudes</a><span class="sep">/</span><span>Nueva</span></h1><span class="sp"></span><button class="btn p" data-act="saveNew">Guardar solicitud</button><button class="btn" data-act="back">Descartar</button></div>';
+  h+='<div class="sheet" style="max-width:860px"><div class="fields">';
+  h+='<div class="f"><label for="n_op">Número de OP *</label><input id="n_op" inputmode="numeric" maxlength="5" placeholder="12700"><span class="err" id="e_op" hidden></span></div>';
+  h+='<div class="f"><label for="n_cl">Cliente *</label><input id="n_cl" placeholder="Nombre del cliente"><span class="err" id="e_cl" hidden>Escribe el nombre del cliente.</span></div>';
+  h+='<div class="f"><label for="n_tp">Tipo de trabajo *</label><select id="n_tp">'+TIPOS.map(function(t){return '<option>'+t+'</option>'}).join('')+'</select></div>';
+  h+='<div class="f"><label for="n_md">Medidas</label><input id="n_md" placeholder="Ej. 4.80 x 2.40 m" value="'+esc(MEDIDAS[TIPOS[0]])+'"></div>';
+  h+='<div class="f"><label for="n_pr">Prioridad</label><select id="n_pr">'+PRIOS.map(function(t){return '<option>'+t+'</option>'}).join('')+'</select></div>';
+  h+='<div class="f"><label for="n_li">Fecha límite *</label><input id="n_li" type="date" value="'+ymd(Date.now()+3*D)+'"><span class="err" id="e_li" hidden>Elige una fecha límite.</span></div>';
+  if(me.role==='admin')h+='<div class="f"><label for="n_vd">Vendedor</label><select id="n_vd">'+USERS.filter(function(u){return u.role==='vendedor'}).map(function(u){return '<option value="'+u.id+'">'+esc(u.name)+'</option>'}).join('')+'</select></div>';
+  else h+=fld('Vendedor',esc(me.name));
+  h+='<div class="f full"><label for="n_ds">Descripción del trabajo</label><textarea id="n_ds" rows="4" placeholder="Qué se necesita, textos, colores, referencias…"></textarea></div>';
+  h+='<div class="f full"><label for="n_fi">Archivos adjuntos</label><input id="n_fi" type="file" multiple><div id="n_files" class="note">Logotipos, textos, fotos de referencia. En este prototipo solo se guarda el nombre.</div></div>';
+  return h+'</div></div>';
+}
+
+/* ---- dashboard ---- */
+function dashHTML(){
+  var all=S.reqs,s=stats(all);
+  var pct=s.reached?Math.round(s.rw/s.reached*100):0;
+  var h='<div class="cp"><h1 class="crumb">Dashboard</h1><span class="sp"></span><button class="btn" data-act="copyCsv">Copiar datos (CSV)</button></div>';
+  h+='<div class="kpis">'+kpi('OP registradas',s.n,s.fin+' finalizadas')+kpi('Horas de diseño',hrs(s.hours)+' h','Tiempo medido con cronómetro')+kpi('Promedio por OP finalizada',s.avgFin==null?'—':dur(s.avgFin),'Solo OP aprobadas o entregadas')+kpi('Reprocesos',pct+' %',s.rw+' de '+s.reached+' OP llegaron a revisión')+kpi('Espera hasta asignar',dur(s.waitAsg),'Desde que ventas la sube')+kpi('Espera hasta iniciar',dur(s.waitStart),'Desde la asignación')+kpi('Revisión del vendedor',dur(s.waitRev),'Desde enviada hasta aprobada')+'<div class="kpi '+(s.late?'bad':'')+'"><div class="k">Vencidas</div><div class="n">'+s.late+'</div><div class="s">Abiertas con fecha límite pasada</div></div></div>';
+  /* meses */
+  var by={};all.forEach(function(r){var k=ymd(r.created).slice(0,7);by[k]=by[k]||{f:0,o:0};closed(r)?by[k].f++:by[k].o++});
+  var keys=Object.keys(by).sort().slice(-5),mx=Math.max.apply(null,keys.map(function(k){return by[k].f+by[k].o}).concat([1]));
+  var mn=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  var mc='<div class="legend"><span><i style="background:var(--bar1)"></i>Finalizadas</span><span><i style="background:var(--bar2)"></i>En curso</span></div><div class="mchart">'+keys.map(function(k){var v=by[k],t=v.f+v.o,H0=150;return '<div class="mc"><div class="tot num">'+t+'</div><div class="stack" style="height:'+Math.max(2,Math.round(t/mx*H0))+'px"><div style="flex:'+v.o+';background:var(--bar2)"></div><div style="flex:'+v.f+';background:var(--bar1)"></div></div></div>'}).join('')+'</div><div class="mlab">'+keys.map(function(k){return '<span>'+mn[+k.slice(5)-1]+' '+k.slice(2,4)+'</span>'}).join('')+'</div>';
+  /* tipos */
+  var tp=TIPOS.map(function(t){var a=all.filter(function(r){return r.tipo===t&&closed(r)}).map(function(r){return total(r)});return {t:t,v:avg(a),n:a.length}}).filter(function(x){return x.n}).sort(function(a,b){return b.v-a.v});
+  var tmx=Math.max.apply(null,tp.map(function(x){return x.v}).concat([1]));
+  var tc='<div class="hb">'+tp.map(function(x){return '<span class="lbl" title="'+esc(x.t)+' ('+x.n+' OP)">'+esc(x.t)+'</span><span class="tr"><i style="width:'+Math.round(x.v/tmx*100)+'%"></i></span><span class="val num">'+hrs(x.v)+' h</span>'}).join('')+'</div>';
+  h+='<div class="g2"><div class="panel"><h3>OP por mes de solicitud</h3>'+mc+'</div><div class="panel"><h3>Horas promedio por tipo de trabajo</h3>'+(tp.length?tc:'<p class="note">Aún no hay OP finalizadas.</p>')+'<p class="note" style="margin-bottom:0">Sirve para estimar cuánto tarda cada tipo de pedido y fijar fechas de entrega realistas.</p></div></div>';
+  /* diseñadores */
+  h+='<div class="panel"><h3>Por diseñador</h3><div class="tw"><table class="num"><thead><tr><th>Diseñador</th><th class="r">OP asignadas</th><th class="r">Finalizadas</th><th class="r">Horas</th><th class="r">Prom. por OP</th><th class="r">Con reproceso</th><th class="r">Vencidas</th></tr></thead><tbody>';
+  USERS.filter(function(u){return u.role==='disenador'}).forEach(function(u){var l=all.filter(function(r){return r.designer===u.id}),x=stats(l);h+='<tr><td>'+avatar(u.id,true)+' &nbsp;'+esc(u.name)+'</td><td class="r">'+x.n+'</td><td class="r">'+x.fin+'</td><td class="r">'+hrs(x.hours)+' h</td><td class="r">'+(x.n?dur(x.hours/x.n):'—')+'</td><td class="r">'+x.rw+'</td><td class="r">'+x.late+'</td></tr>'});
+  h+='</tbody></table></div><p class="note" style="margin-bottom:0">Las horas vienen del cronómetro, no se escriben a mano. Comparar diseñadores solo tiene sentido si hacen tipos de trabajo parecidos.</p></div>';
+  return h;
+}
+function kpi(k,n,s){return '<div class="kpi"><div class="k">'+k+'</div><div class="n num">'+n+'</div><div class="s">'+s+'</div></div>'}
+
+/* ---- configuración ---- */
+function configHTML(){
+  var rows=[['Ver solicitudes','Solo las suyas','Solo las asignadas','Todas'],['Crear solicitud','y','n','y'],['Asignar o reasignar diseñador','n','n','y'],['Iniciar, pausar y reanudar cronómetro','n','y','y'],['Enviar a revisión','n','y','y'],['Aprobar o pedir cambios','y','n','y'],['Marcar como entregada','y','n','y'],['Ver dashboard y tiempos globales','n','n','y'],['Ver otros módulos (Ventas, CRM, Inventario…)','y','n','y']];
+  function c(v){return v==='y'?'<span class="yes">✓</span>':v==='n'?'<span class="no">—</span>':esc(v)}
+  var h='<div class="cp"><h1 class="crumb">Configuración</h1><span class="sp"></span><button class="btn d" data-act="reset">Restablecer datos de ejemplo</button></div>';
+  h+='<div class="g2"><div class="panel"><h3>Roles y permisos propuestos</h3><div class="tw"><table class="perm"><thead><tr><th>Acción</th><th class="c">Vendedor</th><th class="c">Diseñador</th><th class="c">Administrador</th></tr></thead><tbody>'+rows.map(function(r){return '<tr><td>'+r[0]+'</td><td class="c">'+c(r[1])+'</td><td class="c">'+c(r[2])+'</td><td class="c">'+c(r[3])+'</td></tr>'}).join('')+'</tbody></table></div></div>';
+  h+='<div class="panel"><h3>Reglas del flujo</h3><ol class="rules"><li>Ventas sube la solicitud con número de OP único, cliente, tipo, medidas, fecha límite y archivos.</li><li>El administrador asigna un diseñador. Se guarda la hora de asignación.</li><li>El diseñador inicia el trabajo y el cronómetro arranca. Puede pausar y reanudar. Solo puede tener un cronómetro activo; al iniciar otro, el anterior se pausa.</li><li>Al enviar a revisión se detiene el cronómetro y el vendedor recibe el aviso.</li><li>El vendedor aprueba o pide cambios con motivo obligatorio. Pedir cambios crea una versión nueva (v2, v3…) y cuenta como reproceso.</li><li>Aprobada la OP, ventas la marca como entregada.</li><li>Todos los tiempos (espera, diseño, revisión) se calculan con las fechas y horas guardadas en cada paso.</li></ol></div></div>';
+  h+='<div class="panel"><h3>Tipos de trabajo</h3><div>'+TIPOS.map(function(t){return '<span class="chip">'+esc(t)+'</span>'}).join('')+'</div><p class="note" style="margin-bottom:0">En el sistema real esta lista sería editable por el administrador.</p></div>';
+  return h;
+}
+
+/* ======================= RENDER ======================= */
+function render(){
+  $('#app').innerHTML=S.screen==='home'?renderHome():renderApp();
+  document.body.style.background='';
+}
+function renderMain(){var m=$('#main');if(m)m.innerHTML=mainHTML()}
+
+/* ======================= ACCIONES ======================= */
+var A={
+ userMenu:function(){S.umenu=!S.umenu;var m=$('#umenu');if(m)m.hidden=!S.umenu},
+ setUser:function(d){S.me=d.id;S.umenu=false;S.sub='list';S.ask=false;S.fd='';S.q='';save();render();toast('Ahora ves el sistema como '+ME().name+' ('+ROLES[ME().role]+')')},
+ openApp:function(d){if(d.id==='diseno'){S.screen='app';S.sub='list';S.sel=null;render();window.scrollTo(0,0)}else toast('Este módulo es solo una referencia visual. En el prototipo funciona Diseño.')},
+ goHome:function(){S.screen='home';S.umenu=false;S.hq='';render();window.scrollTo(0,0)},
+ nav:function(d){S.sub=d.sub;S.sel=null;S.ask=false;render();window.scrollTo(0,0)},
+ open:function(d){S.sel=d.id;S.sub='form';S.ask=false;renderMain();window.scrollTo(0,0);syncNav()},
+ back:function(){S.sub='list';S.sel=null;S.ask=false;renderMain();syncNav()},
+ newReq:function(){S.sub='new';renderMain();window.scrollTo(0,0);syncNav()},
+ setView:function(d){S.view=d.v;renderMain()},
+ assign:function(){var r=get(S.sel),id=$('#assignSel').value;if(!id){toast('Elige un diseñador');return}
+   r.designer=id;if(!r.assignedAt)r.assignedAt=Date.now();if(r.estado==='solicitada')r.estado='asignada';
+   ev(r,'Asignada a '+U(id).name);save();renderMain();toast('OP '+r.op+' asignada a '+U(id).name)},
+ start:function(){var r=get(S.sel);startWork(r,'Inició el trabajo');if(!r.firstStart)r.firstStart=Date.now();r.estado='diseno';save();renderMain()},
+ resume:function(){var r=get(S.sel);startWork(r,'Reanudó el trabajo'+(r.version>1?' (v'+r.version+')':''));save();renderMain()},
+ pause:function(){var r=get(S.sel);closeOpen(r);ev(r,'Cronómetro en pausa');save();renderMain()},
+ toReview:function(){var r=get(S.sel);closeOpen(r);r.estado='revision';r.revisionAt=Date.now();r.approvedAt=null;ev(r,'Enviada a revisión'+(r.version>1?' (v'+r.version+')':''));save();renderMain();toast('Enviada a revisión. En el sistema real el vendedor recibe un aviso.')},
+ approve:function(){var r=get(S.sel);r.estado='aprobada';r.approvedAt=Date.now();ev(r,'Aprobada');save();renderMain()},
+ askChanges:function(){S.ask=true;renderMain();var t=$('#motivo');if(t)t.focus()},
+ cancelAsk:function(){S.ask=false;renderMain()},
+ confirmAsk:function(){var r=get(S.sel),m=$('#motivo').value.trim();if(!m){$('#motivoErr').hidden=false;return}
+   r.version++;r.rework.push({ts:Date.now(),motivo:m,ver:r.version});r.estado='diseno';r.revisionAt=null;r.approvedAt=null;S.ask=false;
+   ev(r,'Pidió cambios (v'+r.version+'): '+m);save();renderMain();toast('Cambios enviados. Se creó la versión v'+r.version)},
+ deliver:function(){var r=get(S.sel);r.estado='entregada';r.deliveredAt=Date.now();ev(r,'Marcada como entregada');save();renderMain()},
+ saveNew:function(){
+   var op=$('#n_op').value.trim(),cl=$('#n_cl').value.trim(),li=$('#n_li').value,ok=true;
+   var eo=$('#e_op'),ec=$('#e_cl'),el=$('#e_li');eo.hidden=ec.hidden=el.hidden=true;
+   if(!/^\d{5}$/.test(op)){eo.textContent='El número de OP tiene 5 dígitos.';eo.hidden=false;ok=false}
+   else if(S.reqs.some(function(r){return r.op===op})){eo.textContent='Ya existe una solicitud con la OP '+op+'.';eo.hidden=false;ok=false}
+   if(!cl){ec.hidden=false;ok=false}
+   if(!li){el.hidden=false;ok=false}
+   if(!ok)return;
+   var me=ME(),files=[].slice.call($('#n_fi').files||[]).map(function(f){return f.name});
+   var r={id:'n'+Date.now(),op:op,cliente:cl,vendedor:me.role==='admin'?$('#n_vd').value:me.id,tipo:$('#n_tp').value,medidas:$('#n_md').value.trim(),desc:$('#n_ds').value.trim(),prioridad:$('#n_pr').value,limite:li,adjuntos:files,designer:null,created:Date.now(),assignedAt:null,firstStart:null,revisionAt:null,approvedAt:null,deliveredAt:null,version:1,sessions:[],rework:[],log:[],estado:'solicitada'};
+   ev(r,'Solicitud creada');S.reqs.push(r);S.sel=r.id;S.sub='form';save();renderMain();window.scrollTo(0,0);toast('Solicitud creada. Queda pendiente de asignar.')},
+ copyCsv:function(){
+   var rows=[['OP','Cliente','Tipo','Vendedor','Diseñador','Estado','Version','Horas diseño','Creada']].concat(S.reqs.map(function(r){return [r.op,r.cliente,r.tipo,(U(r.vendedor)||{}).name,r.designer?U(r.designer).name:'',r.estado,r.version,(total(r)/H).toFixed(2),ymd(r.created)]}));
+   var csv=rows.map(function(x){return x.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"'}).join(',')}).join('\n');
+   try{navigator.clipboard.writeText(csv).then(function(){toast('CSV copiado. Pégalo en Excel.')},function(){toast('No se pudo copiar desde aquí.')})}catch(e){toast('No se pudo copiar desde aquí.')}},
+ reset:function(){S.reqs=seed();S.sub='list';save();render();toast('Datos de ejemplo restablecidos')}
+};
+function startWork(r,txt){
+  S.reqs.forEach(function(o){if(o!==r&&o.designer===r.designer&&running(o)){closeOpen(o);o.log.push({ts:Date.now(),txt:'Cronómetro en pausa (se inició otra OP)',by:ME().name});toast('Se pausó la OP '+o.op+' porque iniciaste otra.')}});
+  r.sessions.push({start:Date.now(),end:null,ver:r.version});ev(r,txt);
+}
+function syncNav(){document.querySelectorAll('.menus button').forEach(function(b){b.classList.toggle('on',b.dataset.sub==='list')})}
+
+document.addEventListener('click',function(e){
+  var t=e.target.closest('[data-act]');
+  if(!t){if(S.umenu&&!e.target.closest('.usr')){S.umenu=false;var m=$('#umenu');if(m)m.hidden=true}return}
+  if(S.umenu&&t.dataset.act!=='userMenu'&&t.dataset.act!=='setUser'&&!e.target.closest('.usr')){S.umenu=false;var m2=$('#umenu');if(m2)m2.hidden=true}
+  var f=A[t.dataset.act];if(f)f(t.dataset,t,e);
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Enter'){var t=e.target.closest&&e.target.closest('[role=button][data-act],tr[data-act]');if(t&&A[t.dataset.act]){e.preventDefault();A[t.dataset.act](t.dataset,t,e)}}
+  if(e.key==='Escape'&&S.umenu){S.umenu=false;var m=$('#umenu');if(m)m.hidden=true}
+});
+document.addEventListener('input',function(e){
+  var id=e.target.id;
+  if(id==='hq'){S.hq=e.target.value;var apps=APPS.filter(function(a){return ME().role!=='disenador'||a.live});$('#apps').innerHTML=appsHTML(apps,S.hq.toLowerCase())}
+  else if(id==='fq'){S.q=e.target.value;$('#listBody').innerHTML=listBody()}
+});
+document.addEventListener('change',function(e){
+  var id=e.target.id;
+  if(id==='fd'){S.fd=e.target.value;$('#listBody').innerHTML=listBody()}
+  else if(id==='n_tp'){$('#n_md').value=MEDIDAS[e.target.value]||''}
+  else if(id==='n_fi'){var n=[].slice.call(e.target.files).map(function(f){return '📎 '+esc(f.name)});$('#n_files').innerHTML=n.length?n.join('<br>'):'Logotipos, textos, fotos de referencia. En este prototipo solo se guarda el nombre.'}
+});
+setInterval(function(){
+  var now=Date.now();
+  document.querySelectorAll('[data-t]').forEach(function(el){var r=get(el.dataset.id);if(!r||!running(r))return;el.textContent=el.dataset.t==='cur'?hms(now-curStart(r)):hms(total(r,now))});
+},1000);
+render();
+</script>
+
+</body></html>
