@@ -116,7 +116,7 @@ textarea{resize:vertical}
 .pill.diseno{background:var(--warn-soft);color:var(--warn);border-color:transparent}
 .pill.revision{background:var(--brand-soft);color:var(--brand);border-color:transparent}
 .pill.aprobada,.pill.entregada{background:var(--ok-soft);color:var(--ok);border-color:transparent}
-.pill.impresion{background:var(--print-soft);color:var(--print);border-color:transparent}
+.pill.impresion,.pill.preparando{background:var(--print-soft);color:var(--print);border-color:transparent}
 .pill.alta{background:var(--warn-soft);color:var(--warn);border-color:transparent}
 .pill.urgente{background:var(--crit-soft);color:var(--crit);border-color:transparent}
 
@@ -224,7 +224,7 @@ td.r,th.r{text-align:right}
 <script>
 /* ======================= DATOS BASE ======================= */
 var TIPOS=['Valla publicitaria','Señalética','Arte para impresión','Rotulación vehicular','Banner / Roll-up','Papelería corporativa','Empaque / etiqueta','Otro'];
-var ESTADOS=[{k:'solicitada',n:'Solicitada'},{k:'asignada',n:'Asignada'},{k:'diseno',n:'En diseño'},{k:'revision',n:'En revisión'},{k:'aprobada',n:'Aprobada'},{k:'impresion',n:'Impresión'},{k:'entregada',n:'Entregada'}];
+var ESTADOS=[{k:'solicitada',n:'Solicitada'},{k:'asignada',n:'Asignada'},{k:'diseno',n:'En diseño'},{k:'revision',n:'En revisión'},{k:'aprobada',n:'Aprobada'},{k:'preparando',n:'Preparando impresión'},{k:'impresion',n:'Impresión'},{k:'entregada',n:'Entregada'}];
 var PRIOS=['Normal','Alta','Urgente'];
 var USERS=[
  {id:'julio',name:'Julio Monterrosa',role:'admin',c:'#2b7ab8'},
@@ -302,7 +302,9 @@ function seed(){
    [0,'Pupusería La Esquina','carlos','Rotulación vehicular',null,'solicitada',0,0,'Alta'],
    [0,'Cooperativa Cuscatlán','carlos','Banner / Roll-up',null,'solicitada',0,0,'Normal'],
    [6,'Hotel Costa Azul','mariela','Valla publicitaria','adonay','impresion',3,0,'Alta'],
-   [5,'Panadería Doña Rosa','carlos','Banner / Roll-up','fran','impresion',0.5,0,'Normal']
+   [5,'Panadería Doña Rosa','carlos','Banner / Roll-up','fran','impresion',0.5,0,'Normal'],
+   [4,'Clínica San Rafael','carlos','Señalética','adonay','preparando',2,0,'Normal'],
+   [3,'Ferretería El Tornillo','mariela','Banner / Roll-up','fran','prep_run',0.5,0,'Alta']
   ];
   rows.forEach(function(x,i){
     var d=x[0],h=x[6],st=x[5],des=x[4],log=[],sessions=[],rework=[],ver=1;
@@ -312,7 +314,7 @@ function seed(){
     var r={id:'s'+i,op:String(12632+i*9),cliente:x[1],vendedor:x[2],tipo:x[3],medidas:MEDIDAS[x[3]],
       desc:'Diseño de '+x[3].toLowerCase()+' para '+x[1]+'. Logotipo y textos adjuntos.',prioridad:x[8],
       limite:ymd(created+(i===20?2:3+i%5)*D),adjuntos:['logo.ai','textos.docx'],designer:des,created:created,
-      assignedAt:null,firstStart:null,revisionAt:null,approvedAt:null,printAt:null,deliveredAt:null,version:1,sessions:sessions,rework:rework,log:log,estado:st};
+      assignedAt:null,firstStart:null,revisionAt:null,approvedAt:null,printAt:null,prepAt:null,prepStart:null,psessions:[],deliveredAt:null,version:1,sessions:sessions,rework:rework,log:log,estado:st};
     log.push({ts:created,txt:'Solicitud creada',by:U(x[2]).name});
     if(des){
       r.assignedAt=Math.min(created+(20+(i*13)%100)*MIN,now-10*MIN);
@@ -354,8 +356,21 @@ function seed(){
     if(st==='revision'){out.push(r);return}
     r.approvedAt=Math.min(r.revisionAt+(2+(i*5)%20)*H,now-MIN);
     log.push({ts:r.approvedAt,txt:'Aprobada',by:U(x[2]).name});
-    if(st==='impresion'||st==='entregada'){r.printAt=Math.min(r.approvedAt+(1+i%3)*H,now-2*MIN);log.push({ts:r.printAt,txt:'Pasó a impresión',by:U(x[2]).name})}
-    if(st==='entregada'){r.deliveredAt=Math.min(r.printAt+(1+i%4)*H,now-MIN);log.push({ts:r.deliveredAt,txt:'Entregada desde impresión',by:'Operador Plotter'})}
+    if(st!=='aprobada'){
+      r.prepAt=Math.min(r.approvedAt+30*MIN,now-4*H);
+      log.push({ts:r.prepAt,txt:'Pasó a preparación de impresión',by:U(x[2]).name});
+      var ph=0.4+(i%4)*0.3,ps0=r.prepAt+15*MIN,pend=ps0+ph*H;
+      r.prepStart=ps0;r.psessions.push({start:ps0,end:pend});
+      log.push({ts:ps0,txt:'Inició la preparación',by:'Operador Plotter'});
+      if(st==='preparando'||st==='prep_run'){
+        log.push({ts:pend,txt:'Cronómetro de preparación en pausa',by:'Operador Plotter'});
+        if(st==='prep_run'){r.psessions.push({start:now-18*MIN,end:null});log.push({ts:now-18*MIN,txt:'Reanudó la preparación',by:'Operador Plotter'})}
+        r.estado='preparando';
+      }else{
+        r.printAt=pend;log.push({ts:pend,txt:'Enviada a impresión',by:'Operador Plotter'});
+        if(st==='entregada'){r.deliveredAt=Math.min(r.printAt+(1+i%4)*H,now-MIN);log.push({ts:r.deliveredAt,txt:'Entregada desde impresión',by:'Operador Plotter'})}
+      }
+    }
     out.push(r);
   });
   out.forEach(function(r){r.log.sort(function(a,b){return a.ts-b.ts})});
@@ -374,8 +389,13 @@ function get(id){return S.reqs.filter(function(r){return r.id===id})[0]}
 function running(r){return r.sessions.some(function(s){return s.end==null})}
 function curStart(r){var s=r.sessions.filter(function(x){return x.end==null})[0];return s?s.start:null}
 function total(r,now){now=now||Date.now();return sum(r.sessions.map(function(s){return (s.end==null?now:s.end)-s.start}))}
+function psess(r){return r.psessions||(r.psessions=[])}
+function runningP(r){return psess(r).some(function(s){return s.end==null})}
+function curStartP(r){var s=psess(r).filter(function(x){return x.end==null})[0];return s?s.start:null}
+function totalP(r,now){now=now||Date.now();return sum(psess(r).map(function(s){return (s.end==null?now:s.end)-s.start}))}
+function closeOpenP(r){psess(r).forEach(function(s){if(s.end==null)s.end=Date.now()})}
 function dueTs(r){return new Date(r.limite+'T23:59:59').getTime()}
-function closed(r){return r.estado==='aprobada'||r.estado==='impresion'||r.estado==='entregada'}
+function closed(r){return r.estado==='aprobada'||r.estado==='preparando'||r.estado==='impresion'||r.estado==='entregada'}
 function late(r){return !closed(r)&&dueTs(r)<Date.now()}
 function dueText(r){
   if(closed(r))return 'Límite '+dshort(dueTs(r));
@@ -384,7 +404,7 @@ function dueText(r){
   if(n===0)return 'Vence hoy';
   return 'Vence en '+n+' d';
 }
-function visible(){var me=ME();return S.reqs.filter(function(r){return me.role==='admin'||(me.role==='vendedor'&&r.vendedor===me.id)||(me.role==='disenador'&&r.designer===me.id)||(me.role==='impresion'&&(r.estado==='impresion'||r.estado==='entregada'))})}
+function visible(){var me=ME();return S.reqs.filter(function(r){return me.role==='admin'||(me.role==='vendedor'&&r.vendedor===me.id)||(me.role==='disenador'&&r.designer===me.id)||(me.role==='impresion'&&(r.estado==='preparando'||r.estado==='impresion'||r.estado==='entregada'))})}
 function canPrint(r){var me=ME();return me.role==='admin'||me.role==='impresion'}
 function canOp(r){var me=ME();return me.role==='admin'||(me.role==='disenador'&&r.designer===me.id)}
 function canReview(r){var me=ME();return me.role==='admin'||(me.role==='vendedor'&&r.vendedor===me.id)}
@@ -392,7 +412,7 @@ function ev(r,txt){r.log.push({ts:Date.now(),txt:txt,by:ME().name})}
 function closeOpen(r){r.sessions.forEach(function(s){if(s.end==null)s.end=Date.now()})}
 function stats(list){
   var fin=list.filter(closed);
-  var reached=list.filter(function(r){return r.revisionAt||r.version>1||['revision','aprobada','impresion','entregada'].indexOf(r.estado)>=0});
+  var reached=list.filter(function(r){return r.revisionAt||r.version>1||['revision','aprobada','preparando','impresion','entregada'].indexOf(r.estado)>=0});
   var rw=list.filter(function(r){return r.version>1});
   var asg=list.filter(function(r){return r.assignedAt});
   var st=list.filter(function(r){return r.firstStart&&r.assignedAt});
@@ -402,6 +422,7 @@ function stats(list){
     waitAsg:avg(asg.map(function(r){return r.assignedAt-r.created})),
     waitStart:avg(st.map(function(r){return r.firstStart-r.assignedAt})),
     waitRev:avg(apr.map(function(r){return r.approvedAt-r.revisionAt})),
+    prep:avg(list.filter(function(r){return psess(r).length}).map(function(r){return totalP(r)})),
     waitPrint:avg(list.filter(function(r){return r.printAt&&r.deliveredAt}).map(function(r){return r.deliveredAt-r.printAt})),
     late:list.filter(late).length};
 }
@@ -471,9 +492,10 @@ function designerStrip(){
 }
 function printerStrip(){
   var l=visible(),sod=new Date();sod.setHours(0,0,0,0);
-  var cola=l.filter(function(r){return r.estado==='impresion'}).sort(function(a,b){return a.printAt-b.printAt});
+  var run=l.filter(runningP)[0];
+  var cola=l.filter(function(r){return r.estado==='preparando'||r.estado==='impresion'}).sort(function(a,b){return (a.prepAt||a.printAt)-(b.prepAt||b.printAt)});
   var hoy=l.filter(function(r){return r.deliveredAt&&r.deliveredAt>=sod.getTime()}).length;
-  return '<div class="stats" style="margin-bottom:12px"><div class="st"><div class="k">Pendientes de imprimir</div><div class="n">'+cola.length+'</div></div><div class="st"><div class="k">Entregadas hoy</div><div class="n">'+hoy+'</div></div><div class="st"><div class="k">Más antigua en cola</div><div class="n">'+(cola.length?'OP '+esc(cola[0].op):'—')+'</div></div></div>';
+  return '<div class="stats" style="margin-bottom:12px"><div class="st"><div class="k">Pendientes de imprimir</div><div class="n">'+cola.length+'</div></div><div class="st"><div class="k">Entregadas hoy</div><div class="n">'+hoy+'</div></div><div class="st"><div class="k">Más antigua en cola</div><div class="n">'+(cola.length?'OP '+esc(cola[0].op):'—')+'</div></div><div class="st"><div class="k">Cronómetro de preparación</div><div class="n num">'+(run?'OP '+esc(run.op):'Detenido')+'</div></div></div>';
 }
 function filtered(){
   var q=S.q.trim().toLowerCase();
@@ -490,11 +512,11 @@ function listBody(){
   if(S.view==='lista'){
     l=l.slice().sort(function(a,b){return b.created-a.created});
     var h='<div class="tw"><table><thead><tr><th>OP</th><th>Cliente</th><th>Tipo</th><th>Vendedor</th><th>Diseñador</th><th>Prioridad</th><th>Límite</th><th class="r">Tiempo</th><th>Estado</th></tr></thead><tbody>';
-    l.forEach(function(r){h+='<tr class="link" tabindex="0" data-act="open" data-id="'+r.id+'"><td><b>'+esc(r.op)+'</b></td><td>'+esc(r.cliente)+'</td><td>'+esc(r.tipo)+'</td><td>'+esc((U(r.vendedor)||{}).name)+'</td><td>'+(r.designer?esc(U(r.designer).name):'<span class="note">Sin asignar</span>')+'</td><td>'+prio(r)+'</td><td class="'+(late(r)?'due late':'due')+'">'+dueText(r)+'</td><td class="r num">'+(r.sessions.length?(running(r)?'<span class="run"><i></i><span data-t="tot" data-id="'+r.id+'">'+hms(total(r))+'</span></span>':dur(total(r))):'—')+'</td><td>'+stPill(r)+'</td></tr>'});
+    l.forEach(function(r){h+='<tr class="link" tabindex="0" data-act="open" data-id="'+r.id+'"><td><b>'+esc(r.op)+'</b></td><td>'+esc(r.cliente)+'</td><td>'+esc(r.tipo)+'</td><td>'+esc((U(r.vendedor)||{}).name)+'</td><td>'+(r.designer?esc(U(r.designer).name):'<span class="note">Sin asignar</span>')+'</td><td>'+prio(r)+'</td><td class="'+(late(r)?'due late':'due')+'">'+dueText(r)+'</td><td class="r num">'+(r.estado==='preparando'&&psess(r).length?(runningP(r)?'<span class="run"><i></i><span data-t="ptot" data-id="'+r.id+'">'+hms(totalP(r))+'</span></span>':dur(totalP(r))):r.sessions.length?(running(r)?'<span class="run"><i></i><span data-t="tot" data-id="'+r.id+'">'+hms(total(r))+'</span></span>':dur(total(r))):'—')+'</td><td>'+stPill(r)+'</td></tr>'});
     return h+'</tbody></table></div>';
   }
   var h='<div class="kb">';
-  var cols=ME().role==='impresion'?ESTADOS.filter(function(e){return e.k==='impresion'||e.k==='entregada'}):ESTADOS;
+  var cols=ME().role==='impresion'?ESTADOS.filter(function(e){return e.k==='preparando'||e.k==='impresion'||e.k==='entregada'}):ESTADOS;
   cols.forEach(function(e){
     var c=l.filter(function(r){return r.estado===e.k}).sort(function(a,b){return b.created-a.created});
     h+='<section class="col"><h4>'+e.n+'<span class="n">'+c.length+'</span></h4><div class="cards">'+(c.length?c.map(card).join(''):'<div class="empty">Sin solicitudes</div>')+'</div></section>';
@@ -502,9 +524,10 @@ function listBody(){
   return h+'</div>';
 }
 function prio(r){return r.prioridad==='Normal'?'<span class="note">Normal</span>':'<span class="pill '+r.prioridad.toLowerCase()+'">'+r.prioridad+'</span>'}
-function stPill(r){var e=ESTADOS.filter(function(x){return x.k===r.estado})[0];return '<span class="pill '+r.estado+'">'+e.n+(r.estado==='diseno'&&!running(r)&&r.sessions.length?' · pausa':'')+'</span>'}
+function stPill(r){var e=ESTADOS.filter(function(x){return x.k===r.estado})[0];return '<span class="pill '+r.estado+'">'+e.n+((r.estado==='diseno'&&!running(r)&&r.sessions.length)||(r.estado==='preparando'&&!runningP(r)&&psess(r).length)?' · pausa':'')+'</span>'}
 function card(r){
   var t=running(r)?'<span class="run"><i></i><span class="num" data-t="cur" data-id="'+r.id+'">'+hms(Date.now()-curStart(r))+'</span></span>':(r.sessions.length?'<span class="note num">'+dur(total(r))+'</span>':'');
+  if(runningP(r))t='<span class="run"><i></i><span class="num" data-t="pcur" data-id="'+r.id+'">'+hms(Date.now()-curStartP(r))+'</span></span>';else if(r.estado==='preparando'&&psess(r).length)t='<span class="note num">'+dur(totalP(r))+'</span>';
   return '<div class="kc" role="button" tabindex="0" data-act="open" data-id="'+r.id+'"><div class="t"><b>OP '+esc(r.op)+'</b>'+(r.prioridad!=='Normal'?'<span class="pill '+r.prioridad.toLowerCase()+'">'+r.prioridad+'</span>':'')+(r.version>1?'<span class="pill">v'+r.version+'</span>':'')+'</div><div class="cl">'+esc(r.cliente)+'</div><div class="tp">'+esc(r.tipo)+'</div><div class="b"><span class="due '+(late(r)?'late':'')+'">'+dueText(r)+'</span>'+t+avatar(r.designer,true)+'</div></div>';
 }
 
@@ -527,10 +550,11 @@ function timesHTML(r){
   var waitA=r.assignedAt?r.assignedAt-r.created:null;
   var waitS=r.firstStart&&r.assignedAt?r.firstStart-r.assignedAt:null;
   var rev=r.revisionAt?((r.approvedAt||(r.estado==='revision'?now:null))-r.revisionAt):null;
-  var h='<div class="stats"><div class="st"><div class="k">Tiempo en diseño</div><div class="n num '+(running(r)?'run':'')+'" '+(running(r)?'data-t="tot" data-id="'+r.id+'"':'')+'>'+(running(r)?hms(total(r)):(r.sessions.length?dur(total(r)):'—'))+'</div></div><div class="st"><div class="k">Espera hasta asignar</div><div class="n">'+dur(waitA)+'</div></div><div class="st"><div class="k">Espera hasta iniciar</div><div class="n">'+dur(waitS)+'</div></div><div class="st"><div class="k">En revisión del vendedor</div><div class="n">'+dur(rev)+'</div></div><div class="st"><div class="k">En impresión</div><div class="n">'+(r.printAt?dur((r.deliveredAt||now)-r.printAt):'—')+'</div></div></div>';
+  var h='<div class="stats"><div class="st"><div class="k">Tiempo en diseño</div><div class="n num '+(running(r)?'run':'')+'" '+(running(r)?'data-t="tot" data-id="'+r.id+'"':'')+'>'+(running(r)?hms(total(r)):(r.sessions.length?dur(total(r)):'—'))+'</div></div><div class="st"><div class="k">Espera hasta asignar</div><div class="n">'+dur(waitA)+'</div></div><div class="st"><div class="k">Espera hasta iniciar</div><div class="n">'+dur(waitS)+'</div></div><div class="st"><div class="k">En revisión del vendedor</div><div class="n">'+dur(rev)+'</div></div><div class="st"><div class="k">Preparación de impresión</div><div class="n num '+(runningP(r)?'run':'')+'" '+(runningP(r)?'data-t="ptot" data-id="'+r.id+'"':'')+'>'+(runningP(r)?hms(totalP(r)):(psess(r).length?dur(totalP(r)):'—'))+'</div></div><div class="st"><div class="k">En impresión</div><div class="n">'+(r.printAt?dur((r.deliveredAt||now)-r.printAt):'—')+'</div></div></div>';
   if(r.sessions.length){
     h+='<div class="tw" style="margin-top:12px"><table class="num"><thead><tr><th>#</th><th>Versión</th><th>Inicio</th><th>Fin</th><th class="r">Duración</th></tr></thead><tbody>'+r.sessions.map(function(s,i){return '<tr><td>'+(i+1)+'</td><td>v'+s.ver+'</td><td>'+dt(s.start)+'</td><td>'+(s.end?dt(s.end):'<span class="run"><i></i>En curso</span>')+'</td><td class="r">'+dur((s.end==null?now:s.end)-s.start)+'</td></tr>'}).join('')+'</tbody></table></div>';
   }else h+='<p class="note">Todavía no hay tiempo registrado. El cronómetro arranca cuando el diseñador inicia el trabajo.</p>';
+  if(psess(r).length)h+='<h3>Preparación de impresión</h3><div class="tw"><table class="num"><thead><tr><th>#</th><th>Inicio</th><th>Fin</th><th class="r">Duración</th></tr></thead><tbody>'+psess(r).map(function(s,i){return '<tr><td>'+(i+1)+'</td><td>'+dt(s.start)+'</td><td>'+(s.end?dt(s.end):'<span class="run"><i></i>En curso</span>')+'</td><td class="r">'+dur((s.end==null?now:s.end)-s.start)+'</td></tr>'}).join('')+'</tbody></table></div>';
   if(r.rework&&r.rework.length)h+='<h3>Cambios pedidos</h3>'+r.rework.map(function(w){return '<div class="msg"><span class="pill">v'+w.ver+'</span><div class="tx">'+esc(w.motivo)+'<div class="m">'+dt(w.ts)+'</div></div></div>'}).join('');
   return h;
 }
@@ -547,7 +571,11 @@ function actionsHTML(r){
     h+='<button class="btn'+(running(r)?' p':'')+'" data-act="toReview">Enviar a revisión</button>';
   }
   if(r.estado==='revision'&&canReview(r)&&!S.ask)h+='<button class="btn p" data-act="approve">Aprobar</button><button class="btn d" data-act="askChanges">Pedir cambios</button>';
-  if(r.estado==='aprobada'&&canReview(r))h+='<button class="btn p" data-act="toPrint">Pasar a impresión</button>';
+  if(r.estado==='aprobada'&&canReview(r))h+='<button class="btn p" data-act="toPrep">Pasar a preparación</button>';
+  if(r.estado==='preparando'&&canPrint(r)){
+    h+=runningP(r)?'<button class="btn" data-act="ppause">❚❚ Pausar</button>':'<button class="btn p" data-act="pstart">▶ '+(psess(r).length?'Reanudar':'Iniciar preparación')+'</button>';
+    h+='<button class="btn'+(runningP(r)?' p':'')+'" data-act="toPrint">Enviar a impresión</button>';
+  }
   if(r.estado==='impresion'&&canPrint(r))h+='<button class="btn p" data-act="deliver">Entregar</button>';
   return h+'</div>';
 }
@@ -575,7 +603,7 @@ function dashHTML(){
   var all=S.reqs,s=stats(all);
   var pct=s.reached?Math.round(s.rw/s.reached*100):0;
   var h='<div class="cp"><h1 class="crumb">Dashboard</h1><span class="sp"></span><button class="btn" data-act="copyCsv">Copiar datos (CSV)</button></div>';
-  h+='<div class="kpis">'+kpi('OP registradas',s.n,s.fin+' finalizadas')+kpi('Horas de diseño',hrs(s.hours)+' h','Tiempo medido con cronómetro')+kpi('Promedio por OP finalizada',s.avgFin==null?'—':dur(s.avgFin),'OP con diseño terminado (aprobadas en adelante)')+kpi('Reprocesos',pct+' %',s.rw+' de '+s.reached+' OP llegaron a revisión')+kpi('Espera hasta asignar',dur(s.waitAsg),'Desde que ventas la sube')+kpi('Espera hasta iniciar',dur(s.waitStart),'Desde la asignación')+kpi('Revisión del vendedor',dur(s.waitRev),'Desde enviada hasta aprobada')+kpi('Tiempo en impresión',dur(s.waitPrint),'Desde que pasa a impresión hasta la entrega')+'<div class="kpi '+(s.late?'bad':'')+'"><div class="k">Vencidas</div><div class="n">'+s.late+'</div><div class="s">Abiertas con fecha límite pasada</div></div></div>';
+  h+='<div class="kpis">'+kpi('OP registradas',s.n,s.fin+' finalizadas')+kpi('Horas de diseño',hrs(s.hours)+' h','Tiempo medido con cronómetro')+kpi('Promedio por OP finalizada',s.avgFin==null?'—':dur(s.avgFin),'OP con diseño terminado (aprobadas en adelante)')+kpi('Reprocesos',pct+' %',s.rw+' de '+s.reached+' OP llegaron a revisión')+kpi('Espera hasta asignar',dur(s.waitAsg),'Desde que ventas la sube')+kpi('Espera hasta iniciar',dur(s.waitStart),'Desde la asignación')+kpi('Revisión del vendedor',dur(s.waitRev),'Desde enviada hasta aprobada')+kpi('Preparación de impresión',dur(s.prep),'Promedio con cronómetro por OP')+kpi('Tiempo en impresión',dur(s.waitPrint),'Desde que pasa a impresión hasta la entrega')+'<div class="kpi '+(s.late?'bad':'')+'"><div class="k">Vencidas</div><div class="n">'+s.late+'</div><div class="s">Abiertas con fecha límite pasada</div></div></div>';
   /* meses */
   var by={};all.forEach(function(r){var k=ymd(r.created).slice(0,7);by[k]=by[k]||{f:0,o:0};closed(r)?by[k].f++:by[k].o++});
   var keys=Object.keys(by).sort().slice(-5),mx=Math.max.apply(null,keys.map(function(k){return by[k].f+by[k].o}).concat([1]));
@@ -596,11 +624,11 @@ function kpi(k,n,s){return '<div class="kpi"><div class="k">'+k+'</div><div clas
 
 /* ---- configuración ---- */
 function configHTML(){
-  var rows=[['Ver solicitudes','Solo las suyas','Solo las asignadas','Impresión y entregadas','Todas'],['Crear solicitud','y','n','n','y'],['Asignar o reasignar diseñador','n','n','n','y'],['Iniciar, pausar y reanudar cronómetro','n','y','n','y'],['Enviar a revisión','n','y','n','y'],['Aprobar o pedir cambios','y','n','n','y'],['Pasar a impresión','y','n','n','y'],['Entregar (desde impresión)','n','n','y','y'],['Ver dashboard y tiempos globales','n','n','n','y'],['Ver otros módulos (Ventas, CRM, Inventario…)','y','n','n','y']];
+  var rows=[['Ver solicitudes','Solo las suyas','Solo las asignadas','Preparación, impresión y entregadas','Todas'],['Crear solicitud','y','n','n','y'],['Asignar o reasignar diseñador','n','n','n','y'],['Iniciar, pausar y reanudar cronómetro','n','y','n','y'],['Enviar a revisión','n','y','n','y'],['Aprobar o pedir cambios','y','n','n','y'],['Pasar a preparación de impresión','y','n','n','y'],['Cronómetro de preparación y enviar a impresión','n','n','y','y'],['Entregar (desde impresión)','n','n','y','y'],['Ver dashboard y tiempos globales','n','n','n','y'],['Ver otros módulos (Ventas, CRM, Inventario…)','y','n','n','y']];
   function c(v){return v==='y'?'<span class="yes">✓</span>':v==='n'?'<span class="no">—</span>':esc(v)}
   var h='<div class="cp"><h1 class="crumb">Configuración</h1><span class="sp"></span><button class="btn d" data-act="reset">Restablecer datos de ejemplo</button></div>';
   h+='<div class="g2"><div class="panel"><h3>Roles y permisos propuestos</h3><div class="tw"><table class="perm"><thead><tr><th>Acción</th><th class="c">Vendedor</th><th class="c">Diseñador</th><th class="c">Impresión</th><th class="c">Administrador</th></tr></thead><tbody>'+rows.map(function(r){return '<tr><td>'+r[0]+'</td><td class="c">'+c(r[1])+'</td><td class="c">'+c(r[2])+'</td><td class="c">'+c(r[3])+'</td><td class="c">'+c(r[4])+'</td></tr>'}).join('')+'</tbody></table></div></div>';
-  h+='<div class="panel"><h3>Reglas del flujo</h3><ol class="rules"><li>Ventas sube la solicitud con número de OP único, cliente, tipo, medidas, fecha límite y archivos.</li><li>El administrador asigna un diseñador. Se guarda la hora de asignación.</li><li>El diseñador inicia el trabajo y el cronómetro arranca. Puede pausar y reanudar. Solo puede tener un cronómetro activo; al iniciar otro, el anterior se pausa.</li><li>Al enviar a revisión se detiene el cronómetro y el vendedor recibe el aviso.</li><li>El vendedor aprueba o pide cambios con motivo obligatorio. Pedir cambios crea una versión nueva (v2, v3…) y cuenta como reproceso.</li><li>Aprobada la OP, el vendedor (o el administrador) presiona "Pasar a impresión". Se guarda la hora y la OP aparece en la columna Impresión.</li><li>Quien opera el plotter ve la cola de Impresión y presiona "Entregar" al terminar. Con eso la OP queda Entregada y se mide el tiempo de impresión.</li><li>Todos los tiempos (espera, diseño, revisión, impresión) se calculan con las fechas y horas guardadas en cada paso.</li></ol></div></div>';
+  h+='<div class="panel"><h3>Reglas del flujo</h3><ol class="rules"><li>Ventas sube la solicitud con número de OP único, cliente, tipo, medidas, fecha límite y archivos.</li><li>El administrador asigna un diseñador. Se guarda la hora de asignación.</li><li>El diseñador inicia el trabajo y el cronómetro arranca. Puede pausar y reanudar. Solo puede tener un cronómetro activo; al iniciar otro, el anterior se pausa.</li><li>Al enviar a revisión se detiene el cronómetro y el vendedor recibe el aviso.</li><li>El vendedor aprueba o pide cambios con motivo obligatorio. Pedir cambios crea una versión nueva (v2, v3…) y cuenta como reproceso.</li><li>Aprobada la OP, el vendedor (o el administrador) presiona "Pasar a preparación". La OP aparece en la columna Preparando impresión.</li><li>Quien opera el plotter inicia el cronómetro de preparación, puede pausar y reanudar, y presiona "Enviar a impresión" al terminar. Solo hay un cronómetro de preparación activo a la vez.</li><li>En Impresión, el operador presiona "Entregar" al terminar. La OP queda Entregada y se mide el tiempo de impresión.</li><li>Todos los tiempos (espera, diseño, revisión, impresión) se calculan con las fechas y horas guardadas en cada paso.</li></ol></div></div>';
   h+='<div class="panel"><h3>Tipos de trabajo</h3><div>'+TIPOS.map(function(t){return '<span class="chip">'+esc(t)+'</span>'}).join('')+'</div><p class="note" style="margin-bottom:0">En el sistema real esta lista sería editable por el administrador.</p></div>';
   return h;
 }
@@ -636,7 +664,10 @@ var A={
  confirmAsk:function(){var r=get(S.sel),m=$('#motivo').value.trim();if(!m){$('#motivoErr').hidden=false;return}
    r.version++;r.rework.push({ts:Date.now(),motivo:m,ver:r.version});r.estado='diseno';r.revisionAt=null;r.approvedAt=null;S.ask=false;
    ev(r,'Pidió cambios (v'+r.version+'): '+m);save();renderMain();toast('Cambios enviados. Se creó la versión v'+r.version)},
- toPrint:function(){var r=get(S.sel);r.estado='impresion';r.printAt=Date.now();ev(r,'Pasó a impresión');save();renderMain();toast('Enviada a impresión. En el sistema real el operador del plotter recibe un aviso.')},
+ toPrep:function(){var r=get(S.sel);r.estado='preparando';r.prepAt=Date.now();ev(r,'Pasó a preparación de impresión');save();renderMain();toast('Pasó a preparación. En el sistema real el operador del plotter recibe un aviso.')},
+ pstart:function(){var r=get(S.sel),first=!psess(r).length;startPrep(r,first?'Inició la preparación':'Reanudó la preparación');if(!r.prepStart)r.prepStart=Date.now();save();renderMain()},
+ ppause:function(){var r=get(S.sel);closeOpenP(r);ev(r,'Cronómetro de preparación en pausa');save();renderMain()},
+ toPrint:function(){var r=get(S.sel);closeOpenP(r);r.estado='impresion';r.printAt=Date.now();ev(r,'Enviada a impresión');save();renderMain();toast('Enviada a impresión.')},
  deliver:function(){var r=get(S.sel);r.estado='entregada';r.deliveredAt=Date.now();ev(r,'Entregada desde impresión');save();renderMain();toast('OP '+r.op+' entregada')},
  saveNew:function(){
    var op=$('#n_op').value.trim(),cl=$('#n_cl').value.trim(),li=$('#n_li').value,ok=true;
@@ -647,7 +678,7 @@ var A={
    if(!li){el.hidden=false;ok=false}
    if(!ok)return;
    var me=ME(),files=[].slice.call($('#n_fi').files||[]).map(function(f){return f.name});
-   var r={id:'n'+Date.now(),op:op,cliente:cl,vendedor:me.role==='admin'?$('#n_vd').value:me.id,tipo:$('#n_tp').value,medidas:$('#n_md').value.trim(),desc:$('#n_ds').value.trim(),prioridad:$('#n_pr').value,limite:li,adjuntos:files,designer:null,created:Date.now(),assignedAt:null,firstStart:null,revisionAt:null,approvedAt:null,printAt:null,deliveredAt:null,version:1,sessions:[],rework:[],log:[],estado:'solicitada'};
+   var r={id:'n'+Date.now(),op:op,cliente:cl,vendedor:me.role==='admin'?$('#n_vd').value:me.id,tipo:$('#n_tp').value,medidas:$('#n_md').value.trim(),desc:$('#n_ds').value.trim(),prioridad:$('#n_pr').value,limite:li,adjuntos:files,designer:null,created:Date.now(),assignedAt:null,firstStart:null,revisionAt:null,approvedAt:null,printAt:null,prepAt:null,prepStart:null,psessions:[],deliveredAt:null,version:1,sessions:[],rework:[],log:[],estado:'solicitada'};
    ev(r,'Solicitud creada');S.reqs.push(r);S.sel=r.id;S.sub='form';save();renderMain();window.scrollTo(0,0);toast('Solicitud creada. Queda pendiente de asignar.')},
  copyCsv:function(){
    var rows=[['OP','Cliente','Tipo','Vendedor','Diseñador','Estado','Version','Horas diseño','Creada']].concat(S.reqs.map(function(r){return [r.op,r.cliente,r.tipo,(U(r.vendedor)||{}).name,r.designer?U(r.designer).name:'',r.estado,r.version,(total(r)/H).toFixed(2),ymd(r.created)]}));
@@ -658,6 +689,10 @@ var A={
 function startWork(r,txt){
   S.reqs.forEach(function(o){if(o!==r&&o.designer===r.designer&&running(o)){closeOpen(o);o.log.push({ts:Date.now(),txt:'Cronómetro en pausa (se inició otra OP)',by:ME().name});toast('Se pausó la OP '+o.op+' porque iniciaste otra.')}});
   r.sessions.push({start:Date.now(),end:null,ver:r.version});ev(r,txt);
+}
+function startPrep(r,txt){
+  S.reqs.forEach(function(o){if(o!==r&&runningP(o)){closeOpenP(o);o.log.push({ts:Date.now(),txt:'Cronómetro de preparación en pausa (se inició otra OP)',by:ME().name});toast('Se pausó la OP '+o.op+' porque iniciaste otra.')}});
+  psess(r).push({start:Date.now(),end:null});ev(r,txt);
 }
 function syncNav(){document.querySelectorAll('.menus button').forEach(function(b){b.classList.toggle('on',b.dataset.sub==='list')})}
 
@@ -684,7 +719,9 @@ document.addEventListener('change',function(e){
 });
 setInterval(function(){
   var now=Date.now();
-  document.querySelectorAll('[data-t]').forEach(function(el){var r=get(el.dataset.id);if(!r||!running(r))return;el.textContent=el.dataset.t==='cur'?hms(now-curStart(r)):hms(total(r,now))});
+  document.querySelectorAll('[data-t]').forEach(function(el){var r=get(el.dataset.id),k=el.dataset.t;if(!r)return;
+    if(k==='cur'||k==='tot'){if(!running(r))return;el.textContent=k==='cur'?hms(now-curStart(r)):hms(total(r,now))}
+    else{if(!runningP(r))return;el.textContent=k==='pcur'?hms(now-curStartP(r)):hms(totalP(r,now))}});
 },1000);
 render();
 </script>
