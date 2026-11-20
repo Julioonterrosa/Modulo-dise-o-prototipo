@@ -538,7 +538,7 @@ function actionsHTML(r){
   var h='<div class="row">';
   if(r.estado==='solicitada'||r.estado==='asignada'){
     if(ME().role==='admin'){
-      h+='<select id="assignSel" aria-label="Diseñador"><option value="">Elegir diseñador…</option>'+USERS.filter(function(u){return u.role==='disenador'}).map(function(u){return '<option value="'+u.id+'"'+(r.designer===u.id?' selected':'')+'>'+esc(u.name)+'</option>'}).join('')+'</select><button class="btn p" data-act="assign">'+(r.designer?'Reasignar':'Asignar')+'</button>';
+      h+='<select id="assignSel" aria-label="Diseñador"><option value="">Al azar (o elige uno)</option>'+USERS.filter(function(u){return u.role==='disenador'}).map(function(u){return '<option value="'+u.id+'"'+(r.designer===u.id?' selected':'')+'>'+esc(u.name)+'</option>'}).join('')+'</select><button class="btn p" data-act="assign">'+(r.designer?'Reasignar':'Asignar')+'</button>';
     }
   }
   if(r.estado==='asignada'&&canOp(r))h+='<button class="btn p" data-act="start">▶ Iniciar trabajo</button>';
@@ -623,9 +623,9 @@ var A={
  back:function(){S.sub='list';S.sel=null;S.ask=false;renderMain();syncNav()},
  newReq:function(){S.sub='new';renderMain();window.scrollTo(0,0);syncNav()},
  setView:function(d){S.view=d.v;renderMain()},
- assign:function(){var r=get(S.sel),id=$('#assignSel').value;if(!id){toast('Elige un diseñador');return}
+ assign:function(){var r=get(S.sel),id=$('#assignSel').value,rnd=false;if(!id){var ds=USERS.filter(function(u){return u.role==='disenador'&&u.id!==r.designer});id=ds[Math.floor(Math.random()*ds.length)].id;rnd=true}
    r.designer=id;if(!r.assignedAt)r.assignedAt=Date.now();if(r.estado==='solicitada')r.estado='asignada';
-   ev(r,'Asignada a '+U(id).name);save();renderMain();toast('OP '+r.op+' asignada a '+U(id).name)},
+   ev(r,'Asignada a '+U(id).name+(rnd?' (al azar)':''));save();renderMain();toast('OP '+r.op+' asignada a '+U(id).name+(rnd?' (al azar)':''))},
  start:function(){var r=get(S.sel);startWork(r,'Inició el trabajo');if(!r.firstStart)r.firstStart=Date.now();r.estado='diseno';save();renderMain()},
  resume:function(){var r=get(S.sel);startWork(r,'Reanudó el trabajo'+(r.version>1?' (v'+r.version+')':''));save();renderMain()},
  pause:function(){var r=get(S.sel);closeOpen(r);ev(r,'Cronómetro en pausa');save();renderMain()},
