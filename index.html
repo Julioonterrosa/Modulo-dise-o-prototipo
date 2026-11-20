@@ -11,6 +11,7 @@
   --primary:#00858a; --primary-ink:#ffffff;
   --ok:#1b7f48; --ok-soft:#dcf3e5; --warn:#9a5a00; --warn-soft:#fdedd0; --crit:#bb3224; --crit-soft:#fbe2de; --info:#2563a8; --info-soft:#dfeaf7;
   --bar1:#5a4d88; --bar2:#c5bedc;
+  --print:#0b6f86; --print-soft:#d8eff4;
   --home1:#6f62a0; --home2:#aaa4ba;
   --font:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
 }
@@ -20,6 +21,7 @@
   --primary:#12878b; --primary-ink:#ffffff;
   --ok:#62c78f; --ok-soft:#173222; --warn:#f0b45c; --warn-soft:#3a2c11; --crit:#f2918a; --crit-soft:#3e1e1a; --info:#82b4ee; --info-soft:#172a40;
   --bar1:#a89bdc; --bar2:#4a4565;
+  --print:#6fcbe0; --print-soft:#12303a;
   --home1:#40386a; --home2:#6c6881; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#15141b; --surface:#1f1e27; --surface2:#262531; --fg:#e9e7f0; --muted:#a09dae; --line:#363442;
@@ -27,6 +29,7 @@
   --primary:#12878b; --primary-ink:#ffffff;
   --ok:#62c78f; --ok-soft:#173222; --warn:#f0b45c; --warn-soft:#3a2c11; --crit:#f2918a; --crit-soft:#3e1e1a; --info:#82b4ee; --info-soft:#172a40;
   --bar1:#a89bdc; --bar2:#4a4565;
+  --print:#6fcbe0; --print-soft:#12303a;
   --home1:#40386a; --home2:#6c6881; color-scheme:dark}
 
 *{box-sizing:border-box}
@@ -113,6 +116,7 @@ textarea{resize:vertical}
 .pill.diseno{background:var(--warn-soft);color:var(--warn);border-color:transparent}
 .pill.revision{background:var(--brand-soft);color:var(--brand);border-color:transparent}
 .pill.aprobada,.pill.entregada{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.pill.impresion{background:var(--print-soft);color:var(--print);border-color:transparent}
 .pill.alta{background:var(--warn-soft);color:var(--warn);border-color:transparent}
 .pill.urgente{background:var(--crit-soft);color:var(--crit);border-color:transparent}
 
@@ -220,16 +224,18 @@ td.r,th.r{text-align:right}
 <script>
 /* ======================= DATOS BASE ======================= */
 var TIPOS=['Valla publicitaria','Señalética','Arte para impresión','Rotulación vehicular','Banner / Roll-up','Papelería corporativa','Empaque / etiqueta','Otro'];
-var ESTADOS=[{k:'solicitada',n:'Solicitada'},{k:'asignada',n:'Asignada'},{k:'diseno',n:'En diseño'},{k:'revision',n:'En revisión'},{k:'aprobada',n:'Aprobada'},{k:'entregada',n:'Entregada'}];
+var ESTADOS=[{k:'solicitada',n:'Solicitada'},{k:'asignada',n:'Asignada'},{k:'diseno',n:'En diseño'},{k:'revision',n:'En revisión'},{k:'aprobada',n:'Aprobada'},{k:'impresion',n:'Impresión'},{k:'entregada',n:'Entregada'}];
 var PRIOS=['Normal','Alta','Urgente'];
 var USERS=[
  {id:'julio',name:'Julio Monterrosa',role:'admin',c:'#2b7ab8'},
  {id:'carlos',name:'Carlos Méndez',role:'vendedor',c:'#b0643a'},
  {id:'mariela',name:'Mariela Rivas',role:'vendedor',c:'#a0457a'},
  {id:'fran',name:'Fran',role:'disenador',c:'#3b8f6b'},
- {id:'adonay',name:'Adonay',role:'disenador',c:'#7a5fb5'}
+ {id:'adonay',name:'Adonay',role:'disenador',c:'#7a5fb5'},
+ {id:'plotter',name:'Operador Plotter',role:'impresion',c:'#c0762b'}
 ];
-var ROLES={admin:'Administrador',vendedor:'Vendedor',disenador:'Diseñador'};
+var ROLES={admin:'Administrador',vendedor:'Vendedor',disenador:'Diseñador',impresion:'Impresión'};
+function limited(u){return u.role==='disenador'||u.role==='impresion'}
 var MEDIDAS={'Valla publicitaria':'4.80 x 2.40 m','Señalética':'60 x 20 cm','Arte para impresión':'21 x 28 cm','Rotulación vehicular':'1.20 x 0.60 m por lado','Banner / Roll-up':'0.85 x 2.00 m','Papelería corporativa':'Tarjeta 9 x 5 cm','Empaque / etiqueta':'10 x 6 cm','Otro':''};
 var MOTIVOS=['Ajustar el color del logotipo al manual de marca','Cambiar las medidas del arte','Corregir texto con error ortográfico'];
 var APPS=[
@@ -294,7 +300,9 @@ function seed(){
    [0,'Clínica San Rafael','carlos','Arte para impresión','fran','run',0.5,0,'Normal'],
    [1,'Colegio Santa Lucía','mariela','Empaque / etiqueta','adonay','asignada',0,0,'Normal'],
    [0,'Pupusería La Esquina','carlos','Rotulación vehicular',null,'solicitada',0,0,'Alta'],
-   [0,'Cooperativa Cuscatlán','carlos','Banner / Roll-up',null,'solicitada',0,0,'Normal']
+   [0,'Cooperativa Cuscatlán','carlos','Banner / Roll-up',null,'solicitada',0,0,'Normal'],
+   [6,'Hotel Costa Azul','mariela','Valla publicitaria','adonay','impresion',3,0,'Alta'],
+   [5,'Panadería Doña Rosa','carlos','Banner / Roll-up','fran','impresion',0.5,0,'Normal']
   ];
   rows.forEach(function(x,i){
     var d=x[0],h=x[6],st=x[5],des=x[4],log=[],sessions=[],rework=[],ver=1;
@@ -304,7 +312,7 @@ function seed(){
     var r={id:'s'+i,op:String(12632+i*9),cliente:x[1],vendedor:x[2],tipo:x[3],medidas:MEDIDAS[x[3]],
       desc:'Diseño de '+x[3].toLowerCase()+' para '+x[1]+'. Logotipo y textos adjuntos.',prioridad:x[8],
       limite:ymd(created+(i===20?2:3+i%5)*D),adjuntos:['logo.ai','textos.docx'],designer:des,created:created,
-      assignedAt:null,firstStart:null,revisionAt:null,approvedAt:null,deliveredAt:null,version:1,sessions:sessions,rework:rework,log:log,estado:st};
+      assignedAt:null,firstStart:null,revisionAt:null,approvedAt:null,printAt:null,deliveredAt:null,version:1,sessions:sessions,rework:rework,log:log,estado:st};
     log.push({ts:created,txt:'Solicitud creada',by:U(x[2]).name});
     if(des){
       r.assignedAt=Math.min(created+(20+(i*13)%100)*MIN,now-10*MIN);
@@ -346,7 +354,8 @@ function seed(){
     if(st==='revision'){out.push(r);return}
     r.approvedAt=Math.min(r.revisionAt+(2+(i*5)%20)*H,now-MIN);
     log.push({ts:r.approvedAt,txt:'Aprobada',by:U(x[2]).name});
-    if(st==='entregada'){r.deliveredAt=Math.min(r.approvedAt+(1+i%5)*H,now-MIN);log.push({ts:r.deliveredAt,txt:'Marcada como entregada',by:U(x[2]).name})}
+    if(st==='impresion'||st==='entregada'){r.printAt=Math.min(r.approvedAt+(1+i%3)*H,now-2*MIN);log.push({ts:r.printAt,txt:'Pasó a impresión',by:U(x[2]).name})}
+    if(st==='entregada'){r.deliveredAt=Math.min(r.printAt+(1+i%4)*H,now-MIN);log.push({ts:r.deliveredAt,txt:'Entregada desde impresión',by:'Operador Plotter'})}
     out.push(r);
   });
   out.forEach(function(r){r.log.sort(function(a,b){return a.ts-b.ts})});
@@ -366,7 +375,7 @@ function running(r){return r.sessions.some(function(s){return s.end==null})}
 function curStart(r){var s=r.sessions.filter(function(x){return x.end==null})[0];return s?s.start:null}
 function total(r,now){now=now||Date.now();return sum(r.sessions.map(function(s){return (s.end==null?now:s.end)-s.start}))}
 function dueTs(r){return new Date(r.limite+'T23:59:59').getTime()}
-function closed(r){return r.estado==='aprobada'||r.estado==='entregada'}
+function closed(r){return r.estado==='aprobada'||r.estado==='impresion'||r.estado==='entregada'}
 function late(r){return !closed(r)&&dueTs(r)<Date.now()}
 function dueText(r){
   if(closed(r))return 'Límite '+dshort(dueTs(r));
@@ -375,14 +384,15 @@ function dueText(r){
   if(n===0)return 'Vence hoy';
   return 'Vence en '+n+' d';
 }
-function visible(){var me=ME();return S.reqs.filter(function(r){return me.role==='admin'||(me.role==='vendedor'&&r.vendedor===me.id)||(me.role==='disenador'&&r.designer===me.id)})}
+function visible(){var me=ME();return S.reqs.filter(function(r){return me.role==='admin'||(me.role==='vendedor'&&r.vendedor===me.id)||(me.role==='disenador'&&r.designer===me.id)||(me.role==='impresion'&&(r.estado==='impresion'||r.estado==='entregada'))})}
+function canPrint(r){var me=ME();return me.role==='admin'||me.role==='impresion'}
 function canOp(r){var me=ME();return me.role==='admin'||(me.role==='disenador'&&r.designer===me.id)}
 function canReview(r){var me=ME();return me.role==='admin'||(me.role==='vendedor'&&r.vendedor===me.id)}
 function ev(r,txt){r.log.push({ts:Date.now(),txt:txt,by:ME().name})}
 function closeOpen(r){r.sessions.forEach(function(s){if(s.end==null)s.end=Date.now()})}
 function stats(list){
   var fin=list.filter(closed);
-  var reached=list.filter(function(r){return r.revisionAt||r.version>1||['revision','aprobada','entregada'].indexOf(r.estado)>=0});
+  var reached=list.filter(function(r){return r.revisionAt||r.version>1||['revision','aprobada','impresion','entregada'].indexOf(r.estado)>=0});
   var rw=list.filter(function(r){return r.version>1});
   var asg=list.filter(function(r){return r.assignedAt});
   var st=list.filter(function(r){return r.firstStart&&r.assignedAt});
@@ -392,6 +402,7 @@ function stats(list){
     waitAsg:avg(asg.map(function(r){return r.assignedAt-r.created})),
     waitStart:avg(st.map(function(r){return r.firstStart-r.assignedAt})),
     waitRev:avg(apr.map(function(r){return r.approvedAt-r.revisionAt})),
+    waitPrint:avg(list.filter(function(r){return r.printAt&&r.deliveredAt}).map(function(r){return r.deliveredAt-r.printAt})),
     late:list.filter(late).length};
 }
 
@@ -406,7 +417,7 @@ function userBtn(){var u=ME();return '<div class="usr"><button class="usr-btn" d
 
 function renderHome(){
   var me=ME();
-  var apps=APPS.filter(function(a){return me.role!=='disenador'||a.live});
+  var apps=APPS.filter(function(a){return !limited(me)||a.live});
   var q=S.hq.toLowerCase();
   var h='<div class="home"><header class="topbar gut"><span class="tb-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M4 4h12v9H8l-4 3zM18 8h2v10l-3-2h-6v-2h7z"/></svg><b>2</b></span><span class="tb-ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>'+userBtn()+'</header>';
   h+='<div class="gut"><div class="home-main"><label class="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><circle cx="10" cy="10" r="6.500"/><path d="M15 15l6 6"/></svg><input id="hq" type="text" placeholder="Buscar menús…" value="'+esc(S.hq)+'" autocomplete="off"></label><div class="apps" id="apps">'+appsHTML(apps,q)+'</div></div></div></div>';
@@ -444,6 +455,7 @@ function listHTML(){
   if(me.role!=='disenador')h+='<button class="btn p" data-act="newReq">+ Nueva solicitud</button>';
   h+='<span class="sp"></span><div class="seg"><button class="'+(S.view==='kanban'?'on':'')+'" data-act="setView" data-v="kanban">Kanban</button><button class="'+(S.view==='lista'?'on':'')+'" data-act="setView" data-v="lista">Lista</button></div></div>';
   if(me.role==='disenador')h+=designerStrip();
+  if(me.role==='impresion')h+=printerStrip();
   h+='<div class="filters" style="margin-bottom:12px"><input id="fq" type="search" placeholder="Buscar OP, cliente o tipo…" value="'+esc(S.q)+'" aria-label="Buscar">';
   if(me.role==='admin'){h+='<select id="fd" aria-label="Filtrar por diseñador"><option value="">Todos los diseñadores</option><option value="none"'+(S.fd==='none'?' selected':'')+'>Sin asignar</option>'+USERS.filter(function(u){return u.role==='disenador'}).map(function(u){return '<option value="'+u.id+'"'+(S.fd===u.id?' selected':'')+'>'+esc(u.name)+'</option>'}).join('')+'</select>'}
   h+='</div><div id="listBody">'+listBody()+'</div>';
@@ -456,6 +468,12 @@ function designerStrip(){
   var open=mine.filter(function(r){return !closed(r)}).length;
   var run=mine.filter(running)[0];
   return '<div class="stats" style="margin-bottom:12px"><div class="st"><div class="k">Horas hoy</div><div class="n num">'+hrs(inRange(sod.getTime()))+' h</div></div><div class="st"><div class="k">Horas este mes</div><div class="n num">'+hrs(inRange(som.getTime()))+' h</div></div><div class="st"><div class="k">Trabajos abiertos</div><div class="n">'+open+'</div></div><div class="st"><div class="k">Cronómetro</div><div class="n '+(run?'run':'')+' num">'+(run?'OP '+esc(run.op):'Detenido')+'</div></div></div>';
+}
+function printerStrip(){
+  var l=visible(),sod=new Date();sod.setHours(0,0,0,0);
+  var cola=l.filter(function(r){return r.estado==='impresion'}).sort(function(a,b){return a.printAt-b.printAt});
+  var hoy=l.filter(function(r){return r.deliveredAt&&r.deliveredAt>=sod.getTime()}).length;
+  return '<div class="stats" style="margin-bottom:12px"><div class="st"><div class="k">Pendientes de imprimir</div><div class="n">'+cola.length+'</div></div><div class="st"><div class="k">Entregadas hoy</div><div class="n">'+hoy+'</div></div><div class="st"><div class="k">Más antigua en cola</div><div class="n">'+(cola.length?'OP '+esc(cola[0].op):'—')+'</div></div></div>';
 }
 function filtered(){
   var q=S.q.trim().toLowerCase();
@@ -476,7 +494,8 @@ function listBody(){
     return h+'</tbody></table></div>';
   }
   var h='<div class="kb">';
-  ESTADOS.forEach(function(e){
+  var cols=ME().role==='impresion'?ESTADOS.filter(function(e){return e.k==='impresion'||e.k==='entregada'}):ESTADOS;
+  cols.forEach(function(e){
     var c=l.filter(function(r){return r.estado===e.k}).sort(function(a,b){return b.created-a.created});
     h+='<section class="col"><h4>'+e.n+'<span class="n">'+c.length+'</span></h4><div class="cards">'+(c.length?c.map(card).join(''):'<div class="empty">Sin solicitudes</div>')+'</div></section>';
   });
@@ -508,7 +527,7 @@ function timesHTML(r){
   var waitA=r.assignedAt?r.assignedAt-r.created:null;
   var waitS=r.firstStart&&r.assignedAt?r.firstStart-r.assignedAt:null;
   var rev=r.revisionAt?((r.approvedAt||(r.estado==='revision'?now:null))-r.revisionAt):null;
-  var h='<div class="stats"><div class="st"><div class="k">Tiempo en diseño</div><div class="n num '+(running(r)?'run':'')+'" '+(running(r)?'data-t="tot" data-id="'+r.id+'"':'')+'>'+(running(r)?hms(total(r)):(r.sessions.length?dur(total(r)):'—'))+'</div></div><div class="st"><div class="k">Espera hasta asignar</div><div class="n">'+dur(waitA)+'</div></div><div class="st"><div class="k">Espera hasta iniciar</div><div class="n">'+dur(waitS)+'</div></div><div class="st"><div class="k">En revisión del vendedor</div><div class="n">'+dur(rev)+'</div></div></div>';
+  var h='<div class="stats"><div class="st"><div class="k">Tiempo en diseño</div><div class="n num '+(running(r)?'run':'')+'" '+(running(r)?'data-t="tot" data-id="'+r.id+'"':'')+'>'+(running(r)?hms(total(r)):(r.sessions.length?dur(total(r)):'—'))+'</div></div><div class="st"><div class="k">Espera hasta asignar</div><div class="n">'+dur(waitA)+'</div></div><div class="st"><div class="k">Espera hasta iniciar</div><div class="n">'+dur(waitS)+'</div></div><div class="st"><div class="k">En revisión del vendedor</div><div class="n">'+dur(rev)+'</div></div><div class="st"><div class="k">En impresión</div><div class="n">'+(r.printAt?dur((r.deliveredAt||now)-r.printAt):'—')+'</div></div></div>';
   if(r.sessions.length){
     h+='<div class="tw" style="margin-top:12px"><table class="num"><thead><tr><th>#</th><th>Versión</th><th>Inicio</th><th>Fin</th><th class="r">Duración</th></tr></thead><tbody>'+r.sessions.map(function(s,i){return '<tr><td>'+(i+1)+'</td><td>v'+s.ver+'</td><td>'+dt(s.start)+'</td><td>'+(s.end?dt(s.end):'<span class="run"><i></i>En curso</span>')+'</td><td class="r">'+dur((s.end==null?now:s.end)-s.start)+'</td></tr>'}).join('')+'</tbody></table></div>';
   }else h+='<p class="note">Todavía no hay tiempo registrado. El cronómetro arranca cuando el diseñador inicia el trabajo.</p>';
@@ -528,7 +547,8 @@ function actionsHTML(r){
     h+='<button class="btn'+(running(r)?' p':'')+'" data-act="toReview">Enviar a revisión</button>';
   }
   if(r.estado==='revision'&&canReview(r)&&!S.ask)h+='<button class="btn p" data-act="approve">Aprobar</button><button class="btn d" data-act="askChanges">Pedir cambios</button>';
-  if(r.estado==='aprobada'&&canReview(r))h+='<button class="btn p" data-act="deliver">Marcar entregada</button>';
+  if(r.estado==='aprobada'&&canReview(r))h+='<button class="btn p" data-act="toPrint">Pasar a impresión</button>';
+  if(r.estado==='impresion'&&canPrint(r))h+='<button class="btn p" data-act="deliver">Entregar</button>';
   return h+'</div>';
 }
 
@@ -555,7 +575,7 @@ function dashHTML(){
   var all=S.reqs,s=stats(all);
   var pct=s.reached?Math.round(s.rw/s.reached*100):0;
   var h='<div class="cp"><h1 class="crumb">Dashboard</h1><span class="sp"></span><button class="btn" data-act="copyCsv">Copiar datos (CSV)</button></div>';
-  h+='<div class="kpis">'+kpi('OP registradas',s.n,s.fin+' finalizadas')+kpi('Horas de diseño',hrs(s.hours)+' h','Tiempo medido con cronómetro')+kpi('Promedio por OP finalizada',s.avgFin==null?'—':dur(s.avgFin),'Solo OP aprobadas o entregadas')+kpi('Reprocesos',pct+' %',s.rw+' de '+s.reached+' OP llegaron a revisión')+kpi('Espera hasta asignar',dur(s.waitAsg),'Desde que ventas la sube')+kpi('Espera hasta iniciar',dur(s.waitStart),'Desde la asignación')+kpi('Revisión del vendedor',dur(s.waitRev),'Desde enviada hasta aprobada')+'<div class="kpi '+(s.late?'bad':'')+'"><div class="k">Vencidas</div><div class="n">'+s.late+'</div><div class="s">Abiertas con fecha límite pasada</div></div></div>';
+  h+='<div class="kpis">'+kpi('OP registradas',s.n,s.fin+' finalizadas')+kpi('Horas de diseño',hrs(s.hours)+' h','Tiempo medido con cronómetro')+kpi('Promedio por OP finalizada',s.avgFin==null?'—':dur(s.avgFin),'OP con diseño terminado (aprobadas en adelante)')+kpi('Reprocesos',pct+' %',s.rw+' de '+s.reached+' OP llegaron a revisión')+kpi('Espera hasta asignar',dur(s.waitAsg),'Desde que ventas la sube')+kpi('Espera hasta iniciar',dur(s.waitStart),'Desde la asignación')+kpi('Revisión del vendedor',dur(s.waitRev),'Desde enviada hasta aprobada')+kpi('Tiempo en impresión',dur(s.waitPrint),'Desde que pasa a impresión hasta la entrega')+'<div class="kpi '+(s.late?'bad':'')+'"><div class="k">Vencidas</div><div class="n">'+s.late+'</div><div class="s">Abiertas con fecha límite pasada</div></div></div>';
   /* meses */
   var by={};all.forEach(function(r){var k=ymd(r.created).slice(0,7);by[k]=by[k]||{f:0,o:0};closed(r)?by[k].f++:by[k].o++});
   var keys=Object.keys(by).sort().slice(-5),mx=Math.max.apply(null,keys.map(function(k){return by[k].f+by[k].o}).concat([1]));
@@ -576,11 +596,11 @@ function kpi(k,n,s){return '<div class="kpi"><div class="k">'+k+'</div><div clas
 
 /* ---- configuración ---- */
 function configHTML(){
-  var rows=[['Ver solicitudes','Solo las suyas','Solo las asignadas','Todas'],['Crear solicitud','y','n','y'],['Asignar o reasignar diseñador','n','n','y'],['Iniciar, pausar y reanudar cronómetro','n','y','y'],['Enviar a revisión','n','y','y'],['Aprobar o pedir cambios','y','n','y'],['Marcar como entregada','y','n','y'],['Ver dashboard y tiempos globales','n','n','y'],['Ver otros módulos (Ventas, CRM, Inventario…)','y','n','y']];
+  var rows=[['Ver solicitudes','Solo las suyas','Solo las asignadas','Impresión y entregadas','Todas'],['Crear solicitud','y','n','n','y'],['Asignar o reasignar diseñador','n','n','n','y'],['Iniciar, pausar y reanudar cronómetro','n','y','n','y'],['Enviar a revisión','n','y','n','y'],['Aprobar o pedir cambios','y','n','n','y'],['Pasar a impresión','y','n','n','y'],['Entregar (desde impresión)','n','n','y','y'],['Ver dashboard y tiempos globales','n','n','n','y'],['Ver otros módulos (Ventas, CRM, Inventario…)','y','n','n','y']];
   function c(v){return v==='y'?'<span class="yes">✓</span>':v==='n'?'<span class="no">—</span>':esc(v)}
   var h='<div class="cp"><h1 class="crumb">Configuración</h1><span class="sp"></span><button class="btn d" data-act="reset">Restablecer datos de ejemplo</button></div>';
-  h+='<div class="g2"><div class="panel"><h3>Roles y permisos propuestos</h3><div class="tw"><table class="perm"><thead><tr><th>Acción</th><th class="c">Vendedor</th><th class="c">Diseñador</th><th class="c">Administrador</th></tr></thead><tbody>'+rows.map(function(r){return '<tr><td>'+r[0]+'</td><td class="c">'+c(r[1])+'</td><td class="c">'+c(r[2])+'</td><td class="c">'+c(r[3])+'</td></tr>'}).join('')+'</tbody></table></div></div>';
-  h+='<div class="panel"><h3>Reglas del flujo</h3><ol class="rules"><li>Ventas sube la solicitud con número de OP único, cliente, tipo, medidas, fecha límite y archivos.</li><li>El administrador asigna un diseñador. Se guarda la hora de asignación.</li><li>El diseñador inicia el trabajo y el cronómetro arranca. Puede pausar y reanudar. Solo puede tener un cronómetro activo; al iniciar otro, el anterior se pausa.</li><li>Al enviar a revisión se detiene el cronómetro y el vendedor recibe el aviso.</li><li>El vendedor aprueba o pide cambios con motivo obligatorio. Pedir cambios crea una versión nueva (v2, v3…) y cuenta como reproceso.</li><li>Aprobada la OP, ventas la marca como entregada.</li><li>Todos los tiempos (espera, diseño, revisión) se calculan con las fechas y horas guardadas en cada paso.</li></ol></div></div>';
+  h+='<div class="g2"><div class="panel"><h3>Roles y permisos propuestos</h3><div class="tw"><table class="perm"><thead><tr><th>Acción</th><th class="c">Vendedor</th><th class="c">Diseñador</th><th class="c">Impresión</th><th class="c">Administrador</th></tr></thead><tbody>'+rows.map(function(r){return '<tr><td>'+r[0]+'</td><td class="c">'+c(r[1])+'</td><td class="c">'+c(r[2])+'</td><td class="c">'+c(r[3])+'</td><td class="c">'+c(r[4])+'</td></tr>'}).join('')+'</tbody></table></div></div>';
+  h+='<div class="panel"><h3>Reglas del flujo</h3><ol class="rules"><li>Ventas sube la solicitud con número de OP único, cliente, tipo, medidas, fecha límite y archivos.</li><li>El administrador asigna un diseñador. Se guarda la hora de asignación.</li><li>El diseñador inicia el trabajo y el cronómetro arranca. Puede pausar y reanudar. Solo puede tener un cronómetro activo; al iniciar otro, el anterior se pausa.</li><li>Al enviar a revisión se detiene el cronómetro y el vendedor recibe el aviso.</li><li>El vendedor aprueba o pide cambios con motivo obligatorio. Pedir cambios crea una versión nueva (v2, v3…) y cuenta como reproceso.</li><li>Aprobada la OP, el vendedor (o el administrador) presiona "Pasar a impresión". Se guarda la hora y la OP aparece en la columna Impresión.</li><li>Quien opera el plotter ve la cola de Impresión y presiona "Entregar" al terminar. Con eso la OP queda Entregada y se mide el tiempo de impresión.</li><li>Todos los tiempos (espera, diseño, revisión, impresión) se calculan con las fechas y horas guardadas en cada paso.</li></ol></div></div>';
   h+='<div class="panel"><h3>Tipos de trabajo</h3><div>'+TIPOS.map(function(t){return '<span class="chip">'+esc(t)+'</span>'}).join('')+'</div><p class="note" style="margin-bottom:0">En el sistema real esta lista sería editable por el administrador.</p></div>';
   return h;
 }
@@ -616,7 +636,8 @@ var A={
  confirmAsk:function(){var r=get(S.sel),m=$('#motivo').value.trim();if(!m){$('#motivoErr').hidden=false;return}
    r.version++;r.rework.push({ts:Date.now(),motivo:m,ver:r.version});r.estado='diseno';r.revisionAt=null;r.approvedAt=null;S.ask=false;
    ev(r,'Pidió cambios (v'+r.version+'): '+m);save();renderMain();toast('Cambios enviados. Se creó la versión v'+r.version)},
- deliver:function(){var r=get(S.sel);r.estado='entregada';r.deliveredAt=Date.now();ev(r,'Marcada como entregada');save();renderMain()},
+ toPrint:function(){var r=get(S.sel);r.estado='impresion';r.printAt=Date.now();ev(r,'Pasó a impresión');save();renderMain();toast('Enviada a impresión. En el sistema real el operador del plotter recibe un aviso.')},
+ deliver:function(){var r=get(S.sel);r.estado='entregada';r.deliveredAt=Date.now();ev(r,'Entregada desde impresión');save();renderMain();toast('OP '+r.op+' entregada')},
  saveNew:function(){
    var op=$('#n_op').value.trim(),cl=$('#n_cl').value.trim(),li=$('#n_li').value,ok=true;
    var eo=$('#e_op'),ec=$('#e_cl'),el=$('#e_li');eo.hidden=ec.hidden=el.hidden=true;
@@ -626,7 +647,7 @@ var A={
    if(!li){el.hidden=false;ok=false}
    if(!ok)return;
    var me=ME(),files=[].slice.call($('#n_fi').files||[]).map(function(f){return f.name});
-   var r={id:'n'+Date.now(),op:op,cliente:cl,vendedor:me.role==='admin'?$('#n_vd').value:me.id,tipo:$('#n_tp').value,medidas:$('#n_md').value.trim(),desc:$('#n_ds').value.trim(),prioridad:$('#n_pr').value,limite:li,adjuntos:files,designer:null,created:Date.now(),assignedAt:null,firstStart:null,revisionAt:null,approvedAt:null,deliveredAt:null,version:1,sessions:[],rework:[],log:[],estado:'solicitada'};
+   var r={id:'n'+Date.now(),op:op,cliente:cl,vendedor:me.role==='admin'?$('#n_vd').value:me.id,tipo:$('#n_tp').value,medidas:$('#n_md').value.trim(),desc:$('#n_ds').value.trim(),prioridad:$('#n_pr').value,limite:li,adjuntos:files,designer:null,created:Date.now(),assignedAt:null,firstStart:null,revisionAt:null,approvedAt:null,printAt:null,deliveredAt:null,version:1,sessions:[],rework:[],log:[],estado:'solicitada'};
    ev(r,'Solicitud creada');S.reqs.push(r);S.sel=r.id;S.sub='form';save();renderMain();window.scrollTo(0,0);toast('Solicitud creada. Queda pendiente de asignar.')},
  copyCsv:function(){
    var rows=[['OP','Cliente','Tipo','Vendedor','Diseñador','Estado','Version','Horas diseño','Creada']].concat(S.reqs.map(function(r){return [r.op,r.cliente,r.tipo,(U(r.vendedor)||{}).name,r.designer?U(r.designer).name:'',r.estado,r.version,(total(r)/H).toFixed(2),ymd(r.created)]}));
@@ -652,7 +673,7 @@ document.addEventListener('keydown',function(e){
 });
 document.addEventListener('input',function(e){
   var id=e.target.id;
-  if(id==='hq'){S.hq=e.target.value;var apps=APPS.filter(function(a){return ME().role!=='disenador'||a.live});$('#apps').innerHTML=appsHTML(apps,S.hq.toLowerCase())}
+  if(id==='hq'){S.hq=e.target.value;var apps=APPS.filter(function(a){return !limited(ME())||a.live});$('#apps').innerHTML=appsHTML(apps,S.hq.toLowerCase())}
   else if(id==='fq'){S.q=e.target.value;$('#listBody').innerHTML=listBody()}
 });
 document.addEventListener('change',function(e){
