@@ -291,8 +291,8 @@ function seed(){
    [27,'Cooperativa Cuscatlán','mariela','Valla publicitaria','adonay','entregada',4,0,'Alta'],
    [22,'Colegio Santa Lucía','carlos','Papelería corporativa','fran','entregada',1,0,'Normal'],
    [17,'Pupusería La Esquina','mariela','Rotulación vehicular','adonay','entregada',3,1,'Normal'],
-   [12,'Distribuidora Cabañas','carlos','Arte para impresión','fran','aprobada',0.25,0,'Normal'],
-   [9,'Panadería Doña Rosa','mariela','Señalética','adonay','aprobada',2,0,'Normal'],
+   [12,'Distribuidora Cabañas','carlos','Arte para impresión','fran','entregada',0.25,0,'Normal'],
+   [9,'Panadería Doña Rosa','mariela','Señalética','adonay','impresion',2,0,'Normal'],
    [4,'Constructora Vista Alegre','carlos','Valla publicitaria','adonay','revision',3.5,0,'Alta'],
    [3,'Hotel Costa Azul','mariela','Banner / Roll-up','fran','revision',0.5,0,'Normal'],
    [3,'Aeropuerto – señalética','carlos','Señalética','adonay','diseno',1.5,0,'Urgente'],
@@ -358,7 +358,7 @@ function seed(){
     r.approvedAt=Math.min(r.revisionAt+(2+(i*5)%20)*H,now-MIN);
     log.push({ts:r.approvedAt,txt:'Aprobada',by:U(x[2]).name});
     if(st!=='aprobada'){
-      r.prepAt=Math.min(r.approvedAt+30*MIN,now-4*H);
+      r.prepAt=r.approvedAt;
       log.push({ts:r.prepAt,txt:'Pasó a preparación de impresión',by:U(x[2]).name});
       var ph=0.4+(i%4)*0.3,ps0=r.prepAt+15*MIN,pend=ps0+ph*H;
       r.prepStart=ps0;r.psessions.push({start:ps0,end:pend});
@@ -524,7 +524,7 @@ function listBody(){
   }
   var h='<div class="kb">';
   var cols=ME().role==='impresion'?ESTADOS.filter(function(e){return e.k==='preparando'||e.k==='impresion'||e.k==='entregada'}):ESTADOS;
-  cols.forEach(function(e){
+  cols.filter(function(e){return e.k!=='aprobada'||l.some(function(r){return r.estado==='aprobada'})}).forEach(function(e){
     var c=l.filter(function(r){return r.estado===e.k}).sort(function(a,b){return b.created-a.created});
     h+='<section class="col"><h4>'+e.n+'<span class="n">'+c.length+'</span></h4><div class="cards">'+(c.length?c.map(card).join(''):'<div class="empty">Sin solicitudes</div>')+'</div></section>';
   });
@@ -585,7 +585,7 @@ function actionsHTML(r){
     h+=running(r)?'<button class="btn" data-act="pause">❚❚ Pausar</button>':'<button class="btn p" data-act="resume">▶ Reanudar</button>';
     h+='<button class="btn'+(running(r)?' p':'')+'" data-act="toReview">Enviar a revisión</button>';
   }
-  if(r.estado==='revision'&&canReview(r)&&!S.ask)h+='<button class="btn p" data-act="approve">Aprobar</button><button class="btn d" data-act="askChanges">Pedir cambios</button>';
+  if(r.estado==='revision'&&canReview(r)&&!S.ask)h+='<button class="btn p" data-act="approve">Aprobar y pasar a preparación</button><button class="btn d" data-act="askChanges">Pedir cambios</button>';
   if(r.estado==='aprobada'&&canReview(r))h+='<button class="btn p" data-act="toPrep">Pasar a preparación</button>';
   if(r.estado==='preparando'&&canPrint(r)){
     h+=runningP(r)?'<button class="btn" data-act="ppause">❚❚ Pausar</button>':'<button class="btn p" data-act="pstart">▶ '+(psess(r).length?'Reanudar':'Iniciar preparación')+'</button>';
@@ -642,11 +642,11 @@ function kpi(k,n,s){return '<div class="kpi"><div class="k">'+k+'</div><div clas
 
 /* ---- configuración ---- */
 function configHTML(){
-  var rows=[['Ver solicitudes','Solo las suyas','Solo las asignadas','Preparación, impresión y entregadas','Todas'],['Crear solicitud','y','n','n','y'],['Asignar o reasignar diseñador','n','n','n','y'],['Iniciar, pausar y reanudar cronómetro','n','y','n','y'],['Enviar a revisión','n','y','n','y'],['Aprobar o pedir cambios','y','n','n','y'],['Pasar a preparación de impresión','y','n','n','y'],['Cronómetro de preparación y enviar a impresión','n','n','y','y'],['Cronómetro de impresión y entregar','n','n','y','y'],['Ver dashboard y tiempos globales','n','n','n','y'],['Ver otros módulos (Ventas, CRM, Inventario…)','y','n','n','y']];
+  var rows=[['Ver solicitudes','Solo las suyas','Solo las asignadas','Preparación, impresión y entregadas','Todas'],['Crear solicitud','y','n','n','y'],['Asignar o reasignar diseñador','n','n','n','y'],['Iniciar, pausar y reanudar cronómetro','n','y','n','y'],['Enviar a revisión','n','y','n','y'],['Aprobar (pasa solo a preparación) o pedir cambios','y','n','n','y'],['Cronómetro de preparación y enviar a impresión','n','n','y','y'],['Cronómetro de impresión y entregar','n','n','y','y'],['Ver dashboard y tiempos globales','n','n','n','y'],['Ver otros módulos (Ventas, CRM, Inventario…)','y','n','n','y']];
   function c(v){return v==='y'?'<span class="yes">✓</span>':v==='n'?'<span class="no">—</span>':esc(v)}
   var h='<div class="cp"><h1 class="crumb">Configuración</h1><span class="sp"></span><button class="btn d" data-act="reset">Restablecer datos de ejemplo</button></div>';
   h+='<div class="g2"><div class="panel"><h3>Roles y permisos propuestos</h3><div class="tw"><table class="perm"><thead><tr><th>Acción</th><th class="c">Vendedor</th><th class="c">Diseñador</th><th class="c">Impresión</th><th class="c">Administrador</th></tr></thead><tbody>'+rows.map(function(r){return '<tr><td>'+r[0]+'</td><td class="c">'+c(r[1])+'</td><td class="c">'+c(r[2])+'</td><td class="c">'+c(r[3])+'</td><td class="c">'+c(r[4])+'</td></tr>'}).join('')+'</tbody></table></div></div>';
-  h+='<div class="panel"><h3>Reglas del flujo</h3><ol class="rules"><li>Ventas sube la solicitud con número de OP único, cliente, tipo, medidas, fecha límite y archivos.</li><li>El administrador asigna un diseñador. Se guarda la hora de asignación.</li><li>El diseñador inicia el trabajo y el cronómetro arranca. Puede pausar y reanudar. Solo puede tener un cronómetro activo; al iniciar otro, el anterior se pausa.</li><li>Al enviar a revisión se detiene el cronómetro y el vendedor recibe el aviso.</li><li>El vendedor aprueba o pide cambios con motivo obligatorio. Pedir cambios crea una versión nueva (v2, v3…) y cuenta como reproceso.</li><li>Aprobada la OP, el vendedor (o el administrador) presiona "Pasar a preparación". La OP aparece en la columna Preparando impresión.</li><li>Quien opera el plotter inicia el cronómetro de preparación, puede pausar y reanudar, y presiona "Enviar a impresión" al terminar. Solo hay un cronómetro de preparación activo a la vez.</li><li>En Impresión, el operador inicia el cronómetro de impresión (puede pausar y reanudar) y presiona "Entregar" al terminar, lo que detiene el cronómetro. Solo hay un cronómetro de impresión activo a la vez.</li><li>La OP queda Entregada y muestra el resumen de tiempos: diseño, preparando impresión e impresión.</li><li>Todos los tiempos (espera, diseño, revisión, impresión) se calculan con las fechas y horas guardadas en cada paso.</li></ol></div></div>';
+  h+='<div class="panel"><h3>Reglas del flujo</h3><ol class="rules"><li>Ventas sube la solicitud con número de OP único, cliente, tipo, medidas, fecha límite y archivos.</li><li>El administrador asigna un diseñador. Se guarda la hora de asignación.</li><li>El diseñador inicia el trabajo y el cronómetro arranca. Puede pausar y reanudar. Solo puede tener un cronómetro activo; al iniciar otro, el anterior se pausa.</li><li>Al enviar a revisión se detiene el cronómetro y el vendedor recibe el aviso.</li><li>El vendedor aprueba o pide cambios con motivo obligatorio. Pedir cambios crea una versión nueva (v2, v3…) y cuenta como reproceso.</li><li>Al aprobar, la OP queda Aprobada y pasa automáticamente a Preparando impresión. Se guardan la hora de aprobación y la de entrada a preparación.</li><li>Quien opera el plotter inicia el cronómetro de preparación, puede pausar y reanudar, y presiona "Enviar a impresión" al terminar. Solo hay un cronómetro de preparación activo a la vez.</li><li>En Impresión, el operador inicia el cronómetro de impresión (puede pausar y reanudar) y presiona "Entregar" al terminar, lo que detiene el cronómetro. Solo hay un cronómetro de impresión activo a la vez.</li><li>La OP queda Entregada y muestra el resumen de tiempos: diseño, preparando impresión e impresión.</li><li>Todos los tiempos (espera, diseño, revisión, impresión) se calculan con las fechas y horas guardadas en cada paso.</li></ol></div></div>';
   h+='<div class="panel"><h3>Tipos de trabajo</h3><div>'+TIPOS.map(function(t){return '<span class="chip">'+esc(t)+'</span>'}).join('')+'</div><p class="note" style="margin-bottom:0">En el sistema real esta lista sería editable por el administrador.</p></div>';
   return h;
 }
@@ -676,7 +676,7 @@ var A={
  resume:function(){var r=get(S.sel);startWork(r,'Reanudó el trabajo'+(r.version>1?' (v'+r.version+')':''));save();renderMain()},
  pause:function(){var r=get(S.sel);closeOpen(r);ev(r,'Cronómetro en pausa');save();renderMain()},
  toReview:function(){var r=get(S.sel);closeOpen(r);r.estado='revision';r.revisionAt=Date.now();r.approvedAt=null;ev(r,'Enviada a revisión'+(r.version>1?' (v'+r.version+')':''));save();renderMain();toast('Enviada a revisión. En el sistema real el vendedor recibe un aviso.')},
- approve:function(){var r=get(S.sel);r.estado='aprobada';r.approvedAt=Date.now();ev(r,'Aprobada');save();renderMain()},
+ approve:function(){var r=get(S.sel),t=Date.now();r.approvedAt=t;r.prepAt=t;r.estado='preparando';ev(r,'Aprobada');ev(r,'Pasó a preparación de impresión');r.log[r.log.length-1].ts=t+1;save();renderMain();toast('Aprobada. Pasó a Preparando impresión. En el sistema real el operador del plotter recibe un aviso.')},
  askChanges:function(){S.ask=true;renderMain();var t=$('#motivo');if(t)t.focus()},
  cancelAsk:function(){S.ask=false;renderMain()},
  confirmAsk:function(){var r=get(S.sel),m=$('#motivo').value.trim();if(!m){$('#motivoErr').hidden=false;return}
